@@ -1,7 +1,10 @@
 import { type SchemaTypeDefinition } from 'sanity'
-import { eventType } from './eventType'
+import { productType } from './productType'
+import { categoryType } from './categoryType'
+import { orderType } from './orderType'
+import { salesType } from './salesType'
 
-export const schemaTypes = [ eventType]
+export const schemaTypes = [salesType, productType,categoryType,orderType]
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [eventType],
+  types: [salesType,productType,categoryType,orderType],
 }
