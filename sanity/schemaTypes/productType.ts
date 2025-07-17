@@ -1,11 +1,11 @@
-import { TagIcon,ShoppingBasketIcon,ShoppingCartIcon } from "lucide-react";
+import { TagIcon, ShoppingBasketIcon, ShoppingCartIcon } from "lucide-react";
 import { defineField, defineType } from "sanity";
 
 export const productType = defineType({
   name: "product",
   title: "Products",
   type: "document",
-  icon:ShoppingCartIcon,
+  icon: ShoppingCartIcon,
   fields: [
     defineField({
       name: "name",
@@ -18,6 +18,12 @@ export const productType = defineType({
       type: "slug",
       options: { source: "name" },
     }),
+    defineField({
+      name: "description",
+      title: "Description",
+      type: "text",
+    }),
+
     defineField({
       name: "image",
       title: "Image",
@@ -50,7 +56,7 @@ export const productType = defineType({
     },
     prepare(_select) {
       return {
-        title : _select.title,
+        title: _select.title,
         media: _select.media,
         subtitle: "Price: " + _select.subtitle,
       };
