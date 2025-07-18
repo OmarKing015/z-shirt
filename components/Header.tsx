@@ -27,7 +27,7 @@ function Header() {
         </Link>
 
         <Form
-          action="/serach"
+          action="/search"
           className="w-full sm:w-auto sm:flex-1 sm:mx-4 mt-2 sm:mt-0"
         >
           <input
