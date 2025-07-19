@@ -1,6 +1,5 @@
 import { imageUrl } from "@/lib/imageUrl";
 import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug";
-import { PortableText } from "next-sanity";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import React from "react";
@@ -10,7 +9,7 @@ async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
 
   const product = await getProductBySlug(slug);
 
-  if(!product.length){
+  if(!product.price){
     return notFound()
   }
   const isOutOfStock = product.stock != null && product.stock <= 0;
@@ -36,10 +35,7 @@ async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
               {product.price?.toFixed(2)} EGP
             </div>
             <div className="prose max-w-none mb-6">
-              {Array.isArray(product.description) && (
-             <PortableText value={product.description} />
-              
-             )}
+              <h4>{product.description}</h4>
             </div>
           </div>
         </div>
