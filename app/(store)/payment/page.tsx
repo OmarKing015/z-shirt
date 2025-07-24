@@ -66,9 +66,9 @@ export default function PaymentPage() {
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shipping = paymentMethod === "cod" ? 25 : 15.99 // COD has higher shipping fee
-  const tax = subtotal * 0.14 // 14% tax
+  // const tax = subtotal * 0.14 // 14% tax
   const codFee = paymentMethod === "cod" ? 10 : 0 // COD processing fee
-  const total = subtotal + shipping + tax + codFee
+  const total = subtotal + shipping + codFee
 
   const handleInputChange = (field: keyof PaymentFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -343,10 +343,10 @@ export default function PaymentPage() {
                     <span>Shipping</span>
                     <span>{shipping.toFixed(2)} EGP</span>
                   </div>
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span>Tax (14%)</span>
                     <span>{tax.toFixed(2)} EGP</span>
-                  </div>
+                  </div> */}
                   {paymentMethod === "cod" && (
                     <div className="flex justify-between">
                       <span>COD Fee</span>

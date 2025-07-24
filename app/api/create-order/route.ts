@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/sanity/lib/orders/createOrder"
 import { auth } from "@clerk/nextjs/server"
+import { client } from "@/sanity/lib/client"
 
 // Paymob API configuration
 const PAYMOB_API_KEY = process.env.PAYMOB_API_KEY
@@ -153,7 +154,6 @@ export async function POST(request: NextRequest) {
 
     // Step 5: Generate payment URL
     const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${PAYMOB_IFRAME_ID}?payment_token=${paymentToken}`
-
     return NextResponse.json({
       success: true,
       paymentUrl,
@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
       sanityOrderId: sanityResult.success ? sanityResult.order?._id : null,
       paymentToken,
     })
+   
   } catch (error) {
     console.error("Paymob API Error:", error)
     return NextResponse.json(

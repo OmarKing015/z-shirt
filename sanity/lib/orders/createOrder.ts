@@ -1,6 +1,7 @@
 import { client } from "@/sanity/lib/client"
 import { backendClient } from "../backendClient"
 import { auth } from "@clerk/nextjs/server"
+import { updateMultipleProductsStock } from "../products/updateStocks"
 
 export interface OrderData {
   orderId: string
@@ -37,6 +38,20 @@ export async function createOrder(orderData: OrderData) {
       _type: "order",
       ...orderData,
     })
+
+    if (order) {
+      // Deduct stock for each item in the order
+      const stockUpdateItems = orderData.items.map((item) => {
+        console.log(`Preparing item for stock update: Product _ref (expected productId) = ${item.product._ref}, Quantity = ${item.quantity}`)
+        return {
+          productId: item.product._ref, // Use _ref as productId
+          quantity: item.quantity,
+        }
+      })
+      console.log("Calling updateMultipleProductsStock with items:", JSON.stringify(stockUpdateItems, null, 2))
+      await updateMultipleProductsStock(stockUpdateItems)
+    }
+
     return { success: true, order }
   } catch (error) {
     console.error("Failed to create order in Sanity:", error)
