@@ -19,13 +19,18 @@ export type Order = {
   _createdAt: string;
   _updatedAt: string;
   _rev: string;
-  orderNumber?: string;
-  CustomerName?: string;
-  PaymobUserCheckOutId?: string;
-  email?: string;
-  checkoutId?: string;
-  PaymobPaymobIntentId?: string;
-  products?: Array<{
+  orderId?: string;
+  clerkUserId?: string;
+  customerEmail?: string;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+  };
+  items?: Array<{
     product?: {
       _ref: string;
       _type: "reference";
@@ -33,13 +38,18 @@ export type Order = {
       [internalGroqTypeReferenceTo]?: "product";
     };
     quantity?: number;
+    price?: number;
     _key: string;
   }>;
-  totalPrice?: number;
-  currency?: string;
-  amountDiscount?: number;
-  status?: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
-  orederDate?: string;
+  totalAmount?: number;
+  paymentStatus?: "pending" | "completed" | "failed" | "cod_pending";
+  paymentMethod?: "paymob" | "cod";
+  paymobOrderId?: string;
+  paymobTransactionId?: string;
+  orderStatus?: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
+  codNotes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Category = {
@@ -220,6 +230,49 @@ export type SanityAssetSourceData = {
 
 export type AllSanitySchemaTypes = Order | Category | Product | Sale | SanityImagePaletteSwatch | SanityImagePalette | SanityImageDimensions | SanityImageHotspot | SanityImageCrop | SanityFileAsset | SanityImageAsset | SanityImageMetadata | Geopoint | Slug | SanityAssetSourceData;
 export declare const internalGroqTypeReferenceTo: unique symbol;
+// Source: ./sanity/lib/orders/getMyOrders.ts
+// Variable: MY_ORERS_QUERY
+// Query: *[_type == "order" && clerkUserId == $userId] | order(orderDate desc) {    ...,    products[]{    ...,product->}    }
+export type MY_ORERS_QUERYResult = Array<{
+  _id: string;
+  _type: "order";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  orderId?: string;
+  clerkUserId?: string;
+  customerEmail?: string;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+  };
+  items?: Array<{
+    product?: {
+      _ref: string;
+      _type: "reference";
+      _weak?: boolean;
+      [internalGroqTypeReferenceTo]?: "product";
+    };
+    quantity?: number;
+    price?: number;
+    _key: string;
+  }>;
+  totalAmount?: number;
+  paymentStatus?: "cod_pending" | "completed" | "failed" | "pending";
+  paymentMethod?: "cod" | "paymob";
+  paymobOrderId?: string;
+  paymobTransactionId?: string;
+  orderStatus?: "cancelled" | "confirmed" | "delivered" | "pending" | "processing" | "shipped";
+  codNotes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  products: null;
+}>;
+
 // Source: ./sanity/lib/products/getAllCategories.ts
 // Variable: ALL_CATEGORIES_QUERY
 // Query: *[_type == "category"] | order(name asc)
@@ -326,6 +379,7 @@ export type ACTIVE_SALE_BY_COUPON_QUERYResult = {
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
+    "\n    *[_type == \"order\" && clerkUserId == $userId] | order(orderDate desc) {\n    ...,\n    products[]{\n    ...,product->}\n    }\n    ": MY_ORERS_QUERYResult;
     "\n        *[_type == \"category\"] | order(name asc) \n        ": ALL_CATEGORIES_QUERYResult;
     "\n        *[_type == \"product\"] | order(name asc) \n        ": All_PRODUCTS_QUERYResult;
     "\n    *[_type == \"product\" && references(*[_type == \"category\" && slug.current == $categorySlug]._id)] | order(name asc)\n\n    ": PRODUCTS_BY_CATEGORY_QUERYResult;

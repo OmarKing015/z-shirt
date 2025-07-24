@@ -40,8 +40,6 @@ async function BlackFridayBanner() {
                   <span className="font-bold text-red-600 text-lg mr-2">{sale.couponCode}</span>
                   <span className="font-bold text-gray-900 text-base sm:text-lg">for {sale.discountedAmount}% OFF</span>
                 </div>
-
-                <p className="text-white/80 text-sm mt-3">Click to copy code</p>
               </div>
 
               {/* Right Content - Visual Element */}

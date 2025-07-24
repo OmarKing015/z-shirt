@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { updateOrderStatus, findOrderByPaymobId } from "@/sanity/lib/orders/createOrder"
+import { updateMultipleProductsStock } from "@/sanity/lib/products/updateStocks"
 import crypto from "crypto"
 
 const PAYMOB_HMAC_SECRET = process.env.PAYMOB_HMAC_SECRET
@@ -25,24 +27,56 @@ export async function POST(request: NextRequest) {
 
     // Process the webhook based on transaction status
     const { obj: transaction } = body
+    const paymobOrderId = transaction.order.id.toString()
+
+    console.log(`Processing webhook for order: ${paymobOrderId}`)
 
     switch (transaction.success) {
       case true:
         // Payment successful
-        console.log("Payment successful:", transaction.order.id)
-        // TODO: Update your database, send confirmation emails, etc.
-        // You can clear the user's basket here
+        console.log("Payment successful:", paymobOrderId)
+
+        // Update order status in Sanity
+        const updateResult = await updateOrderStatus(
+          paymobOrderId,
+          "processing",
+          "completed",
+          transaction.id.toString(),
+        )
+
+        if (updateResult.success) {
+          // Get order details to update stock
+          const orderResult = await findOrderByPaymobId(paymobOrderId)
+
+          if (orderResult.success && orderResult.order) {
+            // Update product stock
+            const stockUpdates = orderResult.order.items.map((item: any) => ({
+              productId: item.product.slug.current,
+              quantity: item.quantity,
+            }))
+
+            await updateMultipleProductsStock(stockUpdates)
+            console.log("Stock updated for order:", paymobOrderId)
+          }
+        }
+
+        // TODO: Send confirmation email
+        // TODO: Clear user's basket
         break
 
       case false:
         // Payment failed
-        console.log("Payment failed:", transaction.order.id)
-        // TODO: Handle failed payment, notify user
+        console.log("Payment failed:", paymobOrderId)
+
+        // Update order status in Sanity
+        await updateOrderStatus(paymobOrderId, "cancelled", "failed", transaction.id.toString())
+
+        // TODO: Send failure notification
         break
 
       default:
-        console.log("Payment pending:", transaction.order.id)
-      // TODO: Handle pending payment
+        console.log("Payment pending:", paymobOrderId)
+      // Handle pending payment - usually no action needed
     }
 
     return NextResponse.json({ received: true })

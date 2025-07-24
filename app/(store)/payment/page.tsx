@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { CreditCard, ShoppingCart, User, MapPin } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { CreditCard, ShoppingCart, User, MapPin, Truck, Banknote } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface CartItem {
@@ -35,6 +36,7 @@ interface PaymentFormData {
 export default function PaymentPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState("card")
   const [formData, setFormData] = useState<PaymentFormData>({
     firstName: "",
     lastName: "",
@@ -46,7 +48,6 @@ export default function PaymentPage() {
     postalCode: "",
   })
 
-  // Replace the mock cart items section with this:
   const [cartItems, setCartItems] = useState<CartItem[]>([])
 
   useEffect(() => {
@@ -59,15 +60,15 @@ export default function PaymentPage() {
     }
 
     if (storedTotal) {
-      // You can use this stored total if needed
       console.log("Stored total:", storedTotal)
     }
   }, [])
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shipping = 50
-  // const tax = subtotal * 0.14 // 14% tax
-  const total = subtotal + shipping 
+  const shipping = paymentMethod === "cod" ? 25 : 15.99 // COD has higher shipping fee
+  const tax = subtotal * 0.14 // 14% tax
+  const codFee = paymentMethod === "cod" ? 10 : 0 // COD processing fee
+  const total = subtotal + shipping + tax + codFee
 
   const handleInputChange = (field: keyof PaymentFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -78,31 +79,57 @@ export default function PaymentPage() {
     setIsLoading(true)
 
     try {
-      // Create payment order with Paymob
-      const response = await fetch("/api/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: Math.round(total * 100), // Convert to cents
-          currency: "EGP",
-          items: cartItems,
-          customer: formData,
-        }),
-      })
+      if (paymentMethod === "cod") {
+        // Handle Cash on Delivery
+        const response = await fetch("/api/create-cod-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: Math.round(total * 100), // Convert to cents
+            currency: "EGP",
+            items: cartItems,
+            customer: formData,
+            paymentMethod: "cod",
+          }),
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      if (data.success && data.paymentUrl) {
-        // Redirect to Paymob payment page
-        window.location.href = data.paymentUrl
+        if (data.success) {
+          // Redirect to COD success page
+          router.push(`/payment/cod-success?order_id=${data.orderId}`)
+        } else {
+          throw new Error(data.error || "COD order creation failed")
+        }
       } else {
-        throw new Error(data.error || "Payment initialization failed")
+        // Handle Card Payment with Paymob
+        const response = await fetch("/api/create-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: Math.round(total * 100), // Convert to cents
+            currency: "EGP",
+            items: cartItems,
+            customer: formData,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (data.success && data.paymentUrl) {
+          // Redirect to Paymob payment page
+          window.location.href = data.paymentUrl
+        } else {
+          throw new Error(data.error || "Payment initialization failed")
+        }
       }
     } catch (error) {
       console.error("Payment error:", error)
-      alert("Payment initialization failed. Please try again.")
+      alert("Order processing failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -208,7 +235,7 @@ export default function PaymentPage() {
                     />
                   </div>
                 </div>
-                {/* <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
                   <Select value={formData.country} onValueChange={(value) => handleInputChange("country", value)}>
                     <SelectTrigger>
@@ -222,26 +249,58 @@ export default function PaymentPage() {
                       <SelectItem value="LB">Lebanon</SelectItem>
                     </SelectContent>
                   </Select>
-                </div> */}
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Payment Method
-                </CardTitle>
-                <CardDescription>Secure payment powered by Paymob</CardDescription>
+                <CardTitle>Payment Method</CardTitle>
+                <CardDescription>Choose your preferred payment method</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-2 p-4 border rounded-lg bg-blue-50">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-900">Credit/Debit Card</p>
-                    <p className="text-sm text-blue-700">Visa, Mastercard, and local cards accepted</p>
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <RadioGroupItem value="card" id="card" />
+                    <Label htmlFor="card" className="flex-1 cursor-pointer">
+                      <div className="flex items-center space-x-3">
+                        <CreditCard className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Credit/Debit Card</p>
+                          <p className="text-sm text-gray-600">Secure payment powered by Paymob</p>
+                        </div>
+                      </div>
+                    </Label>
                   </div>
-                </div>
+
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <RadioGroupItem value="cod" id="cod" />
+                    <Label htmlFor="cod" className="flex-1 cursor-pointer">
+                      <div className="flex items-center space-x-3">
+                        <Banknote className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Cash on Delivery</p>
+                          <p className="text-sm text-gray-600">Pay when your order arrives</p>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {paymentMethod === "cod" && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Truck className="h-4 w-4 text-amber-600" />
+                      <p className="font-medium text-amber-800">Cash on Delivery Information</p>
+                    </div>
+                    <ul className="text-sm text-amber-700 space-y-1">
+                      <li>• Additional COD processing fee: 10 EGP</li>
+                      <li>• Higher shipping fee applies</li>
+                      <li>• Payment due upon delivery</li>
+                      <li>• Please have exact change ready</li>
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -268,7 +327,7 @@ export default function PaymentPage() {
                       <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">${item.price.toFixed(2)}</p>
+                      <p className="font-medium">{item.price.toFixed(2)} EGP</p>
                     </div>
                   </div>
                 ))}
@@ -284,7 +343,16 @@ export default function PaymentPage() {
                     <span>Shipping</span>
                     <span>{shipping.toFixed(2)} EGP</span>
                   </div>
-                 
+                  <div className="flex justify-between">
+                    <span>Tax (14%)</span>
+                    <span>{tax.toFixed(2)} EGP</span>
+                  </div>
+                  {paymentMethod === "cod" && (
+                    <div className="flex justify-between">
+                      <span>COD Fee</span>
+                      <span>{codFee.toFixed(2)} EGP</span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
@@ -294,7 +362,19 @@ export default function PaymentPage() {
               </CardContent>
               <CardFooter>
                 <Button onClick={handleSubmit} className="w-full" size="lg" disabled={isLoading}>
-                  {isLoading ? "Processing..." : "Proceed to Payment"}
+                  {isLoading ? (
+                    "Processing..."
+                  ) : paymentMethod === "cod" ? (
+                    <>
+                      <Banknote className="mr-2 h-4 w-4" />
+                      Place COD Order
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Proceed to Payment
+                    </>
+                  )}
                 </Button>
               </CardFooter>
             </Card>
@@ -303,11 +383,20 @@ export default function PaymentPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
                   <Badge variant="secondary" className="flex items-center gap-1">
-                    <CreditCard className="h-3 w-3" />
-                    Secure Payment
+                    {paymentMethod === "cod" ? (
+                      <>
+                        <Banknote className="h-3 w-3" />
+                        Cash on Delivery
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-3 w-3" />
+                        Secure Payment
+                      </>
+                    )}
                   </Badge>
                   <Badge variant="secondary">SSL Encrypted</Badge>
-                  <Badge variant="secondary">Paymob Protected</Badge>
+                  <Badge variant="secondary">Safe & Secure</Badge>
                 </div>
               </CardContent>
             </Card>

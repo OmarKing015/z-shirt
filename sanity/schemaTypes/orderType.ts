@@ -1,138 +1,167 @@
-import { ShoppingBasketIcon } from "lucide-react";
-import { defineArrayMember, defineField, defineType } from "sanity";
+import { defineField, defineType } from "sanity"
 
 export const orderType = defineType({
   name: "order",
   title: "Order",
   type: "document",
-  icon: ShoppingBasketIcon,
   fields: [
     defineField({
-      name: "orderNumber",
-      title: "Order Number",
+      name: "orderId",
+      title: "Order ID",
       type: "string",
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "CustomerName",
+      name: "clerkUserId",
+      title: "Customer ID (Clerk)",
+      type: "string",
+    }),
+    defineField({
+      name: "customerEmail",
+      title: "Customer Email",
+      type: "string",
+      validation: (rule) => rule.required().email(),
+    }),
+    defineField({
+      name: "customerName",
       title: "Customer Name",
       type: "string",
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "PaymobUserCheckOutId",
-      title: "User Paymob Checkout ID",
+      name: "customerPhone",
+      title: "Customer Phone",
       type: "string",
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "email",
-      title: "Email",
-      type: "string",
-      readOnly: true,
-    }),
-    defineField({
-      name: "checkoutId",
-      title: "Checkout ID",
-      type: "string",
-      readOnly: true,
-    }),
-    defineField({
-      name: "PaymobPaymobIntentId",
-      title: "Paymob Intent ID",
-      type: "string",
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "products",
-      title: "Products",
-      type: "array",
-      of: [
-        defineArrayMember({
-          type: "object",
-          fields: [
-            defineField({
-              name: "product",
-              title: "Product Bought",
-              type: "reference",
-              validation: (rule) => rule.required(),
-              to: [{ type: "product" }],
-            }),
-            defineField({
-              name: "quantity",
-              title: "Quantity",
-              type: "number",
-              validation: (rule) => rule.required().min(1),
-            }),
-          ],
-          preview: {
-            select: {
-              product: "product.name",
-              quantity: "quantity",
-              image: "product.images[0].asset",
-              price: "product.discountedPrice || product.price",
-              currency: "product.currency",
-            },
-            prepare(_select) {
-              return {
-                title: _select.product,
-                subtitle: `${_select.quantity} x ${_select.price} ${_select.currency}`,
-                media: _select.image,
-              };
-            },
-          },
-        }),
+      name: "shippingAddress",
+      title: "Shipping Address",
+      type: "object",
+      fields: [
+        { name: "street", title: "Street", type: "string" },
+        { name: "city", title: "City", type: "string" },
+        { name: "country", title: "Country", type: "string" },
+        { name: "postalCode", title: "Postal Code", type: "string" },
       ],
     }),
     defineField({
-      name: "totalPrice",
-      title: "Total Price",
+      name: "items",
+      title: "Order Items",
+      type: "array",
+      of: [
+        {
+          type: "object",
+          fields: [
+            {
+              name: "product",
+              title: "Product",
+              type: "reference",
+              to: [{ type: "product" }],
+            },
+            {
+              name: "quantity",
+              title: "Quantity",
+              type: "number",
+            },
+            {
+              name: "price",
+              title: "Price at Purchase",
+              type: "number",
+            },
+          ],
+        },
+      ],
+    }),
+    defineField({
+      name: "totalAmount",
+      title: "Total Amount",
       type: "number",
       validation: (rule) => rule.required().min(0),
     }),
     defineField({
-      name: "currency",
-      title: "Currency",
-      type: "string",
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "amountDiscount",
-      title: "Amount Discount",
-      type: "number",
-      validation: (rule) => rule.min(0),
-    }),
-    defineField({
-      name: "status",
-      title: "Status",
+      name: "paymentStatus",
+      title: "Payment Status",
       type: "string",
       options: {
         list: [
           { title: "Pending", value: "pending" },
-          { title: "Paid", value: "paid" },
+          { title: "Completed", value: "completed" },
+          { title: "Failed", value: "failed" },
+          { title: "COD Pending", value: "cod_pending" }, // New status for COD
+        ],
+      },
+      initialValue: "pending",
+    }),
+    defineField({
+      name: "paymentMethod",
+      title: "Payment Method",
+      type: "string",
+      options: {
+        list: [
+          { title: "Paymob Card", value: "paymob" },
+          { title: "Cash on Delivery", value: "cod" },
+        ],
+      },
+      initialValue: "paymob",
+    }),
+    defineField({
+      name: "paymobOrderId",
+      title: "Paymob/COD Order ID",
+      type: "string",
+    }),
+    defineField({
+      name: "paymobTransactionId",
+      title: "Paymob Transaction ID",
+      type: "string",
+    }),
+    defineField({
+      name: "orderStatus",
+      title: "Order Status",
+      type: "string",
+      options: {
+        list: [
+          { title: "Pending", value: "pending" },
+          { title: "Confirmed", value: "confirmed" }, // New status for COD orders
+          { title: "Processing", value: "processing" },
           { title: "Shipped", value: "shipped" },
           { title: "Delivered", value: "delivered" },
           { title: "Cancelled", value: "cancelled" },
         ],
       },
+      initialValue: "pending",
     }),
     defineField({
-      name: "orederDate",
-      title: "Order Date",
+      name: "codNotes",
+      title: "COD Notes",
+      type: "text",
+      description: "Special instructions for Cash on Delivery orders",
+    }),
+    defineField({
+      name: "createdAt",
+      title: "Created At",
       type: "datetime",
-      validation: (rule) => rule.required(),
+      initialValue: () => new Date().toISOString(),
+    }),
+    defineField({
+      name: "updatedAt",
+      title: "Updated At",
+      type: "datetime",
     }),
   ],
   preview: {
     select: {
-      title: "orderNumber",
-      subtitle: "CustomerName",
+      title: "orderId",
+      subtitle: "customerEmail",
+      description: "totalAmount",
+      paymentMethod: "paymentMethod",
     },
-    prepare(_select) {
+    prepare({ title, subtitle, description, paymentMethod }) {
       return {
-        title: _select.title,
-        subtitle: _select.subtitle,
-      };
+        title: title || "Untitled Order",
+        subtitle: subtitle || "No email",
+        description: `${description} EGP • ${paymentMethod === "cod" ? "COD" : "Card"}`,
+      }
     },
   },
-});
+})
