@@ -1,8 +1,8 @@
 import { fabric } from 'fabric';
 
-const BASE_COST = 6.00; // $6.00 base price for a t-shirt
-const COST_PER_CHAR = 0.10; // $0.10 per character
-const COST_PER_LOGO = 5.00; // $5.00 per logo
+const BASE_COST = 500.00; // $6.00 base price for a t-shirt
+const COST_PER_CHAR = 25; // $0.10 per character
+const COST_PER_LOGO = 25; // $5.00 per logo
 
 interface CustomObject extends fabric.Object {
     cost?: number;

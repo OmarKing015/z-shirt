@@ -64,6 +64,8 @@ export type Category = {
 };
 
 export type Product = {
+  success: any;
+  product: any;
   _id: string;
   _type: "product";
   _createdAt: string;

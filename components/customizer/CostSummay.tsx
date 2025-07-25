@@ -12,8 +12,8 @@ export default function CostSummary() {
         <CardTitle className="text-lg">Total Cost</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-bold text-primary-foreground">
-          ${totalCost.toFixed(2)}
+        <p className="text-3xl font-bold text-black">
+          {totalCost.toFixed(2)} EGP
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           Real-time price calculation.

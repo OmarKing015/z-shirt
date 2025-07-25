@@ -13,10 +13,12 @@ import CanvasWrapper from "./CanvasWraper";
 import Toolbar from "./Toolbar";
 import CostSummary from "./CostSummay";
 import { Card } from "../ui/card";
+import slim from "@/public/T-shirt skelton.jpg";
+import oversize from "@/public/OverSizeT-shirtSkeleton.jpg"
 
 const TSHIRT_IMAGES = {
-  slim: "https://www.bing.com/ck/a?!&&p=d6ac50b1263b41135e4c71b6c7417fea5872f023281961a32d90c3313891b042JmltdHM9MTc1MzMxNTIwMA&ptn=3&ver=2&hsh=4&fclid=1caf939a-5e6f-608d-19ad-801d5f186141&u=a1L2ltYWdlcy9zZWFyY2g_cT1zbGltJTIwdCUyMHNoaXJ0cyUyMGZvciUyMG1lbiUyMHdoaXRlJTIwcG5nJkZPUk09SVFGUkJBJmlkPTY3NUQ5RDNCNTQyQjI1RUI2M0JFOTAxREVENTA2QTc2OTEzMUVDMzQ&ntb=1",
-  oversized: "https://storage.googleapis.com/project-spark-b295f.appspot.com/static/docs/images/oversized_tshirt_final.png",
+  slim: slim,
+  oversized: oversize,
 };
 
 
