@@ -107,7 +107,7 @@ function BasketPage() {
                     className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 cursor-pointer"
                     onClick={() => router.push(`/product/${item.product.slug?.current}`)}
                   >
-                    {item.product.image && (
+                    {/* {item.product.image ? (
                       <Image
                         src={imageUrl(item.product.image).url() || "/placeholder.svg"}
                         alt={item.product.name ?? "Product Image"}
@@ -115,7 +115,7 @@ function BasketPage() {
                         width={96}
                         height={96}
                       />
-                    )}
+                    ):(<div></div>)} */}
                   </div>
 
                   <div className="flex-1 min-w-0">

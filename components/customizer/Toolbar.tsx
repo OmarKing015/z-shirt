@@ -3,7 +3,7 @@
 import type React from "react"
 import { useRef, useState } from "react"
 import { fabric } from "fabric"
-import { Type, ImagePlus, Undo, Redo, Trash2, Palette, Ruler, ShoppingBasket, Check } from "lucide-react"
+import { Type, ImagePlus, Undo, Redo, Trash2, Palette, Ruler, Download } from "lucide-react"
 import { useEditorStore } from "../../store/store"
 import useBasketStore from "../../store/store"
 import { Button } from "@/components/ui/button"
@@ -15,10 +15,7 @@ import { useToast } from "./use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { client } from "@/sanity/lib/client"
-import { createProduct } from "@/sanity/lib/products/createProduct"
-import { Product } from "@/sanity.types"
-import { backendClient } from "@/sanity/lib/backendClient"
+import JSZip from "jszip"
 
 const TEMPLATE_LOGOS = [
   { name: "Logo 1", url: "/logos/logo1.png" },
@@ -53,6 +50,7 @@ export default function Toolbar() {
   const [selectedSize, setSelectedSize] = useState("M")
   const [selectedColor, setSelectedColor] = useState("#FFFFFF")
   const [isArabic, setIsArabic] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
@@ -142,73 +140,288 @@ export default function Toolbar() {
     }
   }
 
-  const orderNow = async () => {
-    if (!canvas) return
+  // Helper function to convert data URL to blob
+  const dataURLtoBlob = (dataURL: string): Blob => {
+    const arr = dataURL.split(",")
+    const mime = arr[0].match(/:(.*?);/)![1]
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new Blob([u8arr], { type: mime })
+  }
 
-    try {
-      // Convert canvas to data URL
-      const imageDataUrl = canvas.toDataURL({ format: "png" })
-
-      // Convert data URL to blob
-      const fetchResponse = await fetch(imageDataUrl)
-      const blob = await fetchResponse.blob()
-
-      // Create a file from the blob
-      const file = new File([blob], "tshirt-design.png", { type: "image/png" })
-
-      // Upload the image to Sanity
-      const imageAsset = await client.assets.upload("image", file)
-
-      // Get design details
-      const objects = canvas.toJSON(["cost", "type"])
-      const totalPrice = useEditorStore.getState().totalCost
-
-      // Create product metadata
-      const productName = `Custom T-Shirt - ${selectedSize} - ${SHIRT_COLORS.find((c) => c.value === selectedColor)?.name || "White"} - ${shirtStyle}`
-
-      // Create the product using the new createProduct function
-      const result= await backendClient.create<Product>({
-        _type: "product",
-        name: productName,
-        slug: {
-          _type: "slug",
-          current: productName.toLowerCase().replace(/ /g, "-"),
-        },
-        image: {
-          _type: "image",
-          asset: {
-            _type: "reference",
-            _ref: imageAsset._id,
-          },
-        },
-        price: totalPrice,
-        _id: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
-        _createdAt: "",
-        _updatedAt: "",
-        _rev: "",
-        success:"" ,
-        product: ""
+  // Helper function to wait for canvas rendering
+  const waitForCanvasRender = (canvas: fabric.Canvas): Promise<void> => {
+    return new Promise((resolve) => {
+      canvas.renderAll()
+      // Use requestAnimationFrame to ensure rendering is complete
+      requestAnimationFrame(() => {
+        setTimeout(resolve, 100) // Additional small delay to ensure complete rendering
       })
-      console.log(result)
+    })
+  }
 
-      if (result.product) {
-        // Add to basket
-        addItem(result.product )
+  // Helper function to generate individual element images
+  const generateElementImages = async (): Promise<{ name: string; blob: Blob }[]> => {
+    if (!canvas) return []
 
-        toast({
-          title: "Added to Basket!",
-          description: "Your custom t-shirt has been added to your basket.",
+    const elements: { name: string; blob: Blob }[] = []
+    const objects = canvas.getObjects()
+
+    console.log(`Found ${objects.length} objects on canvas`)
+
+    for (let i = 0; i < objects.length; i++) {
+      const obj = objects[i]
+      console.log(`Processing object ${i}:`, obj.type, obj)
+
+      try {
+        // Get object bounds
+        const bounds = obj.getBoundingRect()
+        const padding = 20 // Add some padding around the object
+
+        // Create a temporary canvas with proper dimensions
+        const tempCanvasElement = document.createElement("canvas")
+        tempCanvasElement.width = bounds.width + padding * 2
+        tempCanvasElement.height = bounds.height + padding * 2
+
+        const tempCanvas = new fabric.Canvas(tempCanvasElement, {
+          width: bounds.width + padding ,
+          height: bounds.height + padding ,
+          backgroundColor: "transparent",
         })
-      } else {
-        throw new Error("Failed to create product")
+
+        // Clone the object
+        const clonedObj = await new Promise<fabric.Object>((resolve, reject) => {
+          obj.clone((cloned: fabric.Object) => {
+            if (cloned) {
+              resolve(cloned)
+            } else {
+              reject(new Error("Failed to clone object"))
+            }
+          })
+        })
+
+        // Position the cloned object in the center of the temp canvas
+        clonedObj.set({
+          left: padding,
+          top: padding,
+        })
+
+        // Add the object to temp canvas
+        tempCanvas.add(clonedObj)
+
+        // Wait for rendering to complete
+        await waitForCanvasRender(tempCanvas)
+
+        // Generate image with white background for better visibility
+        const dataURL = tempCanvas.toDataURL({
+          format: "png",
+          quality: 1,
+          multiplier: 2, // Higher resolution
+          enableRetinaScaling: false,
+          
+        })
+
+        console.log(`Generated dataURL for object ${i}:`, dataURL.substring(0, 100) + "...")
+
+        const blob = dataURLtoBlob(dataURL)
+
+        // @ts-ignore
+        const elementType = obj.type || "element"
+        let elementName = `${elementType}_${i + 1}`
+
+        // For text objects, use the actual text as name
+        if (obj.type === "i-text" || obj.type === "text") {
+          // @ts-ignore
+          const textContent = obj.text || "text"
+          elementName = `text_${textContent.substring(0, 10).replace(/[^a-zA-Z0-9]/g, "_")}_${i + 1}`
+        } else if (obj.type === "image") {
+          elementName = `logo_${i + 1}`
+        }
+
+        elements.push({
+          name: `${elementName}.png`,
+          blob,
+        })
+
+        // Clean up temp canvas
+        tempCanvas.dispose()
+      } catch (error) {
+        console.error(`Error processing object ${i}:`, error)
       }
-    } catch (error) {
-      console.error("Failed to create order:", error)
+    }
+
+    console.log(`Generated ${elements.length} element images`)
+    return elements
+  }
+
+  const orderNow = async () => {
+    if (!canvas) {
       toast({
         title: "Error",
-        description: "Failed to create your order.",
+        description: "Canvas not found. Please try again.",
         variant: "destructive",
       })
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      // Generate unique ID for the basket item
+      const designId = `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+      console.log("Starting design export process...")
+
+      // Ensure canvas is fully rendered
+      await waitForCanvasRender(canvas)
+
+      // Set canvas background color to match selected shirt color
+      const originalBackground = canvas.backgroundColor as string | fabric.Pattern | fabric.Gradient // Explicitly type originalBackground
+      canvas.setBackgroundColor(selectedColor, () => {
+        canvas.renderAll()
+      })
+
+      // Wait for background to be applied
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      // Generate the complete t-shirt design PNG
+      const fullDesignDataURL = canvas.toDataURL({
+        format: "png",
+        quality: 1,
+        multiplier: 2, // Higher resolution
+        enableRetinaScaling: false,
+      })
+
+      console.log("Full design generated:", fullDesignDataURL.substring(0, 100) + "...")
+
+      // Restore original background
+      canvas.setBackgroundColor(originalBackground, () => {
+        canvas.renderAll()
+      })
+
+      const fullDesignBlob = dataURLtoBlob(fullDesignDataURL)
+
+      // Generate individual element images
+      console.log("Generating individual element images...")
+      const elementImages = await generateElementImages()
+
+      // Create ZIP file
+      const zip = new JSZip()
+
+      // Add the full design
+      zip.file("full_design.png", fullDesignBlob)
+
+      // Add individual elements if any exist
+      if (elementImages.length > 0) {
+        const elementsFolder = zip.folder("elements")
+        elementImages.forEach((element) => {
+          elementsFolder?.file(element.name, element.blob)
+        })
+      }
+
+      // Add design information as JSON
+      const designInfo = {
+        id: designId,
+        name: `Custom T-Shirt - ${selectedSize} - ${SHIRT_COLORS.find((c) => c.value === selectedColor)?.name || "White"} - ${shirtStyle}`,
+        size: selectedSize,
+        color: SHIRT_COLORS.find((c) => c.value === selectedColor)?.name || "White",
+        colorHex: selectedColor,
+        style: shirtStyle,
+        font: selectedFont,
+        language: isArabic ? "Arabic" : "English",
+        elements: canvas.getObjects().length,
+        createdAt: new Date().toISOString(),
+        canvasData: canvas.toJSON(["cost", "type"]),
+        canvasSize: {
+          width: canvas.width,
+          height: canvas.height,
+        },
+      }
+
+      zip.file("design_info.json", JSON.stringify(designInfo, null, 2))
+
+      // Add a readme file with instructions
+      const readmeContent = `T-Shirt Design Package
+======================
+
+This package contains:
+1. full_design.png - Complete t-shirt design with background color
+2. elements/ folder - Individual design elements (logos, text)
+3. design_info.json - Design specifications and metadata
+
+Design Details:
+- Size: ${selectedSize}
+- Color: ${designInfo.color}
+- Style: ${shirtStyle}
+- Elements: ${elementImages.length}
+- Created: ${new Date().toLocaleString()}
+
+Design ID: ${designId}
+`
+
+      zip.file("README.txt", readmeContent)
+
+      // Generate and download ZIP file
+      console.log("Generating ZIP file...")
+      const zipBlob = await zip.generateAsync({ type: "blob" })
+      const url = URL.createObjectURL(zipBlob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${designInfo.name.replace(/[^a-zA-Z0-9]/g, "_")}_${designId}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      // Add item to basket with the design ID
+      const basketItem = {
+        product:"",
+        success:"",
+        _id: designId,
+        _type: "product" as const,
+        name: designInfo.name,
+        description: `Custom designed t-shirt with ${elementImages.length} elements`,
+        price: useEditorStore.getState().totalCost || 29.99,
+        image: {
+          asset: {
+            _ref: fullDesignDataURL, // Using data URL as reference for preview
+            _type: "reference" as const,
+          },
+          _type: "image" as const,
+        },
+        stock: 1,
+        _createdAt: designInfo.createdAt,
+        _updatedAt: designInfo.createdAt,
+        _rev: "",
+        // Additional custom properties
+        customDesign: true,
+        designId: designId,
+        size: selectedSize,
+        color: selectedColor,
+        style: shirtStyle,
+      }
+
+      addItem(basketItem)
+
+      toast({
+        title: "Design Downloaded & Added to Basket!",
+        description: `Your custom t-shirt design has been downloaded and added to your basket. Design ID: ${designId}`,
+      })
+
+      console.log("Design export completed successfully!")
+    } catch (error) {
+      console.error("Failed to process design:", error)
+      toast({
+        title: "Error",
+        description: "Failed to process your design. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -258,7 +471,11 @@ export default function Toolbar() {
                     style={{ backgroundColor: color.value }}
                     onClick={() => updateShirtColor(color.value)}
                   >
-                    {selectedColor === color.value && <Check className="w-4 h-4 mx-auto text-white" />}
+                    {selectedColor === color.value && (
+                      <div className="w-full h-full rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      </div>
+                    )}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -390,8 +607,9 @@ export default function Toolbar() {
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <h2 className="font-semibold text-sm text-muted-foreground">Actions</h2>
-          <Button onClick={orderNow} size="lg">
-            <ShoppingBasket className="mr-2" /> Order Now
+          <Button onClick={orderNow} size="lg" disabled={isProcessing}>
+            <Download className="mr-2" />
+            {isProcessing ? "Processing..." : "Download & Add to Basket"}
           </Button>
         </div>
       </aside>
