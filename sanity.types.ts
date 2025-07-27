@@ -48,6 +48,7 @@ export type Order = {
   paymobTransactionId?: string;
   orderStatus?: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
   codNotes?: string;
+  fileUrl?:"string"
   createdAt?: string;
   updatedAt?: string;
 };

@@ -16,6 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import JSZip from "jszip"
+import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
+import { useAppContext } from "@/context/context"
+import { useUser } from "@clerk/nextjs"
 
 const TEMPLATE_LOGOS = [
   { name: "Logo 1", url: "/logos/logo1.png" },
@@ -43,8 +46,10 @@ const FONTS = {
 }
 
 export default function Toolbar() {
+  const {user}= useUser()
   const { canvas, shirtStyle, toggleShirtStyle, undo, redo, canUndo, canRedo } = useEditorStore()
   const { addItem } = useBasketStore()
+  const { setAssetId } = useAppContext();
   const [text, setText] = useState("Hello")
   const [selectedFont, setSelectedFont] = useState("Inter")
   const [selectedSize, setSelectedSize] = useState("M")
@@ -257,7 +262,22 @@ export default function Toolbar() {
     console.log(`Generated ${elements.length} element images`)
     return elements
   }
-
+  async function uploadZipFile(file: Blob) {
+    const formData = new FormData();
+    formData.append(user?.fullName || "file", file);
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error('File upload failed');
+    }
+    const result = await response.json();
+    if (result._id) {
+      setAssetId(result._id);
+    }
+    return result;
+  }
   const orderNow = async () => {
     if (!canvas) {
       toast({
@@ -404,8 +424,9 @@ Design ID: ${designId}
         color: selectedColor,
         style: shirtStyle,
       }
-
-      addItem(basketItem)
+      const product = await getProductBySlug("custom-tshirt")
+      addItem(product)
+      uploadZipFile(zipBlob)
 
       toast({
         title: "Design Downloaded & Added to Basket!",

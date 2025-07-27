@@ -148,6 +148,11 @@ export const orderType = defineType({
       title: "Updated At",
       type: "datetime",
     }),
+    defineField({
+      name: "fileUrl",
+      title: "Custom Design Matrials ",
+      type: "string",
+    }),
   ],
   preview: {
     select: {

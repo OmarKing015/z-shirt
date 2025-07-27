@@ -4,6 +4,7 @@ import "../globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Header";
 import { SanityLive } from "@/sanity/lib/live";
+import { ContextProvider } from "@/context/context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,18 +27,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider dynamic>
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <main>
-          <Header/>
-          {children} 
-        </main>
-       <SanityLive/>
-      </body>
-    </html>
+    <ClerkProvider>
+      <ContextProvider>
+        <html lang="en">
+          <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          >
+            <main>
+              <Header />
+              {children}
+            </main>
+            <SanityLive />
+          </body>
+        </html>
+      </ContextProvider>
     </ClerkProvider>
   );
 }

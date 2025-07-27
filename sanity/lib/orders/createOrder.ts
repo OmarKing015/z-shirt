@@ -27,6 +27,7 @@ export interface OrderData {
   paymentStatus: "pending" | "completed" | "failed"
   paymentMethod: string
   paymobOrderId: string
+  fileUrl?:string
   paymobTransactionId?: string
   orderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | "confirmed"
   createdAt: string
@@ -38,11 +39,7 @@ export async function createOrder(orderData: OrderData) {
       _type: "order",
       ...orderData,
     })
-    const product = await backendClient.create({
-      _type: "product",
-      ...orderData.items[0],
-    })
-    console.log(product)
+   
 
     if (order) {
       // Deduct stock for each item in the order

@@ -1,11 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/sanity/lib/orders/createOrder"
 import { auth } from "@clerk/nextjs/server"
+import { useAppContext } from "@/context/context"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { amount, currency, items, customer, paymentMethod } = body
+    const { amount, currency, items,assetId, customer, paymentMethod } = body
 
     console.log("=== CREATE COD ORDER DEBUG ===")
     console.log("Request body:", JSON.stringify(body, null, 2))
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       paymentStatus: "pending" as const, // COD starts as pending
       paymentMethod: paymentMethod || "cod", // Use provided paymentMethod or default to "cod"
       paymobOrderId: codOrderId, // Use COD order ID instead of Paymob ID
+     fileUrl:assetId,
       orderStatus: "confirmed" as const, // COD orders are confirmed immediately
       createdAt: new Date().toISOString(),
     }

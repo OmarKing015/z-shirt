@@ -1,4 +1,4 @@
-import "server-only";
+"use server"
 
 import { defineLive } from "next-sanity";
 import { client } from "../lib/client";

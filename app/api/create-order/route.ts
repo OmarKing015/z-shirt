@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/sanity/lib/orders/createOrder"
 import { auth } from "@clerk/nextjs/server"
 import { client } from "@/sanity/lib/client"
+import { useAppContext } from "@/context/context"
 
 // Paymob API configuration
 const PAYMOB_API_KEY = process.env.PAYMOB_API_KEY
@@ -23,7 +24,7 @@ interface PaymobPaymentKeyResponse {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { amount, currency, items, customer } = body
+    const { amount, currency, items, customer,assetId } = body
 
     // Get user info from Clerk
     const { userId } = await auth()
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
       totalAmount: amount / 100, // Convert back from cents
       paymentStatus: "pending" as const,
       paymentMethod: "paymob",
+      fileUrl:assetId,
       paymobOrderId: paymobOrderId.toString(),
       orderStatus: "pending" as const,
       createdAt: new Date().toISOString(),

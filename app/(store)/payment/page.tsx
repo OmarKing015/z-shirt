@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CreditCard, ShoppingCart, User, MapPin, Truck, Banknote } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useAppContext } from "@/context/context"
 
 interface CartItem {
   id: string
@@ -49,6 +50,7 @@ export default function PaymentPage() {
   })
 
   const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const {assetId} = useAppContext()
 
   useEffect(() => {
     // Get cart data from sessionStorage
@@ -115,6 +117,7 @@ export default function PaymentPage() {
             currency: "EGP",
             items: cartItems,
             customer: formData,
+            assetId:assetId,
           }),
         })
 
