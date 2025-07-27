@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient, Binary } from 'mongodb';
-import { uri } from '@/lib/mongodbConfig';
+import { auth, clerkClient, currentUser, getAuth, User} from '@clerk/nextjs/server';
+// import { uri } from '@/lib/mongodbConfig';
 
+export const uri = process.env.MONGODB_API_KEY || "";
 
 
 export async function POST(req: NextRequest) {
+  
   // Parse the multipart form data
   const formData = await req.formData();
   const file = formData.get('file') as File | null;
+const user =await currentUser();
 
   if (!file) {
     return NextResponse.json({ message: 'No file uploaded' }, { status: 400 });
@@ -24,7 +28,8 @@ export async function POST(req: NextRequest) {
   const collection = db.collection('uploads');
 
   const result = await collection.insertOne({
-    filename: file.name,
+    filename: user?.fullName || "custom tshirt",
+    UserId: user?.id,
     data: new Binary(buffer),
     uploadedAt: new Date(),
   });

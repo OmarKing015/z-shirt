@@ -19,6 +19,7 @@ import JSZip from "jszip"
 import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
 import { useAppContext } from "@/context/context"
 import { useUser } from "@clerk/nextjs"
+import { redirect } from "next/navigation"
 
 const TEMPLATE_LOGOS = [
   { name: "Logo 1", url: "/logos/logo1.png" },
@@ -264,19 +265,19 @@ export default function Toolbar() {
   }
   async function uploadZipFile(file: Blob) {
     const formData = new FormData();
-    formData.append(user?.fullName || "file", file);
+    formData.append("file", file);
     const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
     });
+       console.log("Here are the results" , response.json);
+
     if (!response.ok) {
       throw new Error('File upload failed');
     }
     const result = await response.json();
-    if (result._id) {
-      setAssetId(result._id);
-    }
     return result;
+
   }
   const orderNow = async () => {
     if (!canvas) {
@@ -390,50 +391,24 @@ Design ID: ${designId}
       const zipBlob = await zip.generateAsync({ type: "blob" })
       const url = URL.createObjectURL(zipBlob)
       const link = document.createElement("a")
-      link.href = url
-      link.download = `${designInfo.name.replace(/[^a-zA-Z0-9]/g, "_")}_${designId}.zip`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      // link.href = url
+      // link.download = `${designInfo.name.replace(/[^a-zA-Z0-9]/g, "_")}_${designId}.zip`
+      // document.body.appendChild(link)
+      // link.click()
+      // document.body.removeChild(link)
+      // URL.revokeObjectURL(url)
 
       // Add item to basket with the design ID
-      const basketItem = {
-        product:"",
-        success:"",
-        _id: designId,
-        _type: "product" as const,
-        name: designInfo.name,
-        description: `Custom designed t-shirt with ${elementImages.length} elements`,
-        price: useEditorStore.getState().totalCost || 29.99,
-        image: {
-          asset: {
-            _ref: fullDesignDataURL, // Using data URL as reference for preview
-            _type: "reference" as const,
-          },
-          _type: "image" as const,
-        },
-        stock: 1,
-        _createdAt: designInfo.createdAt,
-        _updatedAt: designInfo.createdAt,
-        _rev: "",
-        // Additional custom properties
-        customDesign: true,
-        designId: designId,
-        size: selectedSize,
-        color: selectedColor,
-        style: shirtStyle,
-      }
+    
       const product = await getProductBySlug("custom-tshirt")
       addItem(product)
-      uploadZipFile(zipBlob)
-
+      uploadZipFile(zipBlob) 
       toast({
         title: "Design Downloaded & Added to Basket!",
         description: `Your custom t-shirt design has been downloaded and added to your basket. Design ID: ${designId}`,
       })
+      redirect("/basket");
 
-      console.log("Design export completed successfully!")
     } catch (error) {
       console.error("Failed to process design:", error)
       toast({

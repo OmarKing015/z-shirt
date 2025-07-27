@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/sanity/lib/orders/createOrder"
 import { auth } from "@clerk/nextjs/server"
-import { useAppContext } from "@/context/context"
 
 export async function POST(request: NextRequest) {
   try {

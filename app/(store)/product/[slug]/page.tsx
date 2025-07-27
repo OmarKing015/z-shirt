@@ -1,4 +1,5 @@
 import AddToBasketButton from "@/components/AddToBasketButton"
+// import SizeChooser from "@/components/SizeChooser"
 import { imageUrl } from "@/lib/imageUrl"
 import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
 import Image from "next/image"
@@ -69,6 +70,10 @@ async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
                       )}
                     </p>
                   )}
+                </div>
+             <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-gray-900">Size</h3>
+                  <p className="text-gray-600">{product.size?.map((size : string) => `${size}, `)}</p>
                 </div>
 
                 {product.description && (

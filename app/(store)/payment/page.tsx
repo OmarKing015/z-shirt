@@ -94,6 +94,7 @@ export default function PaymentPage() {
             items: cartItems,
             customer: formData,
             paymentMethod: "cod",
+            assetId:assetId,
           }),
         })
 
