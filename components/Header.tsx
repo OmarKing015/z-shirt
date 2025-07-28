@@ -1,9 +1,9 @@
 "use client"
 
 import { ClerkLoaded, SignedIn, SignInButton, UserButton, useUser } from "@clerk/nextjs"
-import Link from "next/link"
+import Link from "next/link";
 import Form from "next/form"
-import { PackageIcon, ShoppingBasketIcon, Search, Menu, X } from "lucide-react"
+import { PackageIcon, ShoppingBasketIcon, Search, Menu, X, PenIcon, PenToolIcon } from "lucide-react"
 import useBasketStore from "@/store/store"
 import { useState } from "react"
 
@@ -56,6 +56,13 @@ function Header() {
               <span>Basket</span>
             </Link>
 
+            {/* Customize */}
+            <Link
+              href="/customize"
+              className="relative flex items-center space-x-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              <span>Customize</span>
+            </Link>
             {/* Orders (Signed In Only) */}
             <ClerkLoaded>
               <SignedIn>
@@ -110,6 +117,14 @@ function Header() {
               <ShoppingBasketIcon className="w-5 h-5" />
             </Link>
 
+            {/* Customize */}
+            <Link
+              href="/customize"
+              className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors duration-200"
+            >
+              <PenToolIcon/>
+              <span>Customize</span>
+            </Link>
             {/* User Button */}
             <ClerkLoaded>
               {user ? (
@@ -150,6 +165,14 @@ function Header() {
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 py-4">
             <div className="space-y-2">
+              {/* Customize Link in Mobile Menu */}
+              <Link
+                href="/customize"
+                className="flex items-center space-x-3 py-3 px-4 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="font-medium">Customize</span>
+              </Link>
               <ClerkLoaded>
                 <SignedIn>
                   <Link

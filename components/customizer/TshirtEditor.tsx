@@ -12,8 +12,8 @@ import CanvasWrapper from "./CanvasWraper";
 import Toolbar from "./Toolbar";
 import CostSummary from "./CostSummay";
 import { Card } from "../ui/card";
-import slim from "@/public/slimMock.jpeg";
-import oversize from "@/public/oversizeMock.jpeg"
+import slim from "@/public/slimMock.png";
+import oversize from "@/public/oversizeMock.png"
 
 const TSHIRT_IMAGES = {
   slim: slim,
@@ -48,7 +48,7 @@ export default function TshirtEditor() {
     <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] min-h-screen">
       <Toolbar />
       <div className="flex flex-col items-center justify-center p-4 md:p-8 bg-muted/20 relative">
-        <Card className="relative w-full max-w-[500px] aspect-square overflow-hidden shadow-lg rounded-2xl">
+        <Card className="relative w-full max-w-[500px]    aspect-square bg-transparent overflow-hidden  rounded-2xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={shirtStyle}
@@ -63,7 +63,7 @@ export default function TshirtEditor() {
                 data-ai-hint={`${shirtStyle} t-shirt`}
                 alt={`${shirtStyle} t-shirt`}
                 fill
-                className="object-cover"
+                className="object-contain"
               />
             </motion.div>
           </AnimatePresence>
