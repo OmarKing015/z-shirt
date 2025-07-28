@@ -7,12 +7,14 @@ import { Minus, Plus, ShoppingCart } from "lucide-react"
 
 interface AddToBasketButtonProps {
   product: Product
+  selectedSize:string
+    extraCost?: number
   disabled?: boolean
 }
 
-function AddToBasketButton({ product, disabled }: AddToBasketButtonProps) {
+function AddToBasketButton({ product, disabled, selectedSize , extraCost }: AddToBasketButtonProps) {
   const { addItem, removeItem, getItemCount } = useBasketStore()
-  const itemCount = getItemCount(product._id)
+  const itemCount = getItemCount(product._id,selectedSize)
   const [isClient, setIsClient] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
@@ -30,7 +32,7 @@ function AddToBasketButton({ product, disabled }: AddToBasketButtonProps) {
 
   const handleAddItem = async () => {
     setIsAdding(true)
-    addItem(product)
+     addItem(product, selectedSize,0)
     // Small delay for visual feedback
     setTimeout(() => setIsAdding(false), 200)
   }
@@ -62,7 +64,7 @@ function AddToBasketButton({ product, disabled }: AddToBasketButtonProps) {
       <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2 border">
         {/* Decrease Button */}
         <button
-          onClick={() => removeItem(product._id)}
+          onClick={() => removeItem(product._id,selectedSize)}
           className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
         >
           <Minus className="h-4 w-4 text-gray-600" />
@@ -114,7 +116,7 @@ function AddToBasketButton({ product, disabled }: AddToBasketButtonProps) {
           onClick={() => {
             // Remove all items of this product
             for (let i = 0; i < itemCount; i++) {
-              removeItem(product._id)
+              removeItem(product._id, selectedSize)
             }
           }}
           className="flex-1 py-2 px-3 rounded-md text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-200"

@@ -7,14 +7,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { fabric } from "fabric";
 
 import { useEditorStore } from "../../store/store";
-import { costEngine } from "@/lib/costEngine";
 
 import CanvasWrapper from "./CanvasWraper";
 import Toolbar from "./Toolbar";
 import CostSummary from "./CostSummay";
 import { Card } from "../ui/card";
-import slim from "@/public/T-shirt skelton.jpg";
-import oversize from "@/public/OverSizeT-shirtSkeleton.jpg"
+import slim from "@/public/slimMock.jpeg";
+import oversize from "@/public/oversizeMock.jpeg"
 
 const TSHIRT_IMAGES = {
   slim: slim,
@@ -27,9 +26,6 @@ export default function TshirtEditor() {
     shirtStyle,
     setCanvas,
     setTotalCost,
-    history,
-    setHistory,
-    setHistoryIndex,
   } = useEditorStore();
   const isUpdating = useRef(false);
 
@@ -40,38 +36,13 @@ export default function TshirtEditor() {
     });
     setCanvas(initCanvas);
 
-    const updateCostAndHistory = () => {
-        if (isUpdating.current) return;
-
-        const objects = initCanvas.getObjects();
-        const cost = costEngine.calculate(objects);
-        setTotalCost(cost);
-        
-        // Save state for undo/redo
-        const currentState = JSON.stringify(initCanvas.toJSON(['cost', 'type']));
-        const currentHistory = useEditorStore.getState().history;
-        const currentHistoryIndex = useEditorStore.getState().historyIndex;
-
-        // If we are undoing/redoing, the history will be the same, so we don't need to add it again
-        if(currentState === currentHistory[currentHistoryIndex]) return;
-
-        const newHistory = [...currentHistory.slice(0, currentHistoryIndex + 1), currentState];
-        setHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
-    };
-
-    initCanvas.on("object:added", updateCostAndHistory);
-    initCanvas.on("object:modified", updateCostAndHistory);
-    initCanvas.on("object:removed", updateCostAndHistory);
+    // The event listeners and history management are now handled within setCanvas in the store
 
     return () => {
       initCanvas.dispose();
-      initCanvas.off("object:added", updateCostAndHistory);
-      initCanvas.off("object:modified", updateCostAndHistory);
-      initCanvas.off("object:removed", updateCostAndHistory);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setCanvas, setTotalCost, setHistory, setHistoryIndex]);
+  }, [setCanvas, setTotalCost]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] min-h-screen">

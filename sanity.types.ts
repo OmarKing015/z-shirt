@@ -65,6 +65,7 @@ export type Category = {
 };
 
 export type Product = {
+  size:string[];
   success: any;
   product: any;
   _id: string;

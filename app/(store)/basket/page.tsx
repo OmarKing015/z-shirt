@@ -9,6 +9,8 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ShoppingCart, Package, CreditCard, ArrowRight, Trash2 } from "lucide-react"
+import { costEngine } from "@/lib/costEngine"
+import { useAppContext } from "@/context/context"
 
 function BasketPage() {
   const groupedItems = useBasketStore((state) => state.getGroupedItems())
@@ -18,7 +20,7 @@ function BasketPage() {
   const router = useRouter()
   const [isClient, setIsClient] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-
+const {extraCost} = useAppContext()
   useEffect(() => {
     setIsClient(true)
   }, [])
@@ -51,7 +53,7 @@ function BasketPage() {
   const totalPrice = useBasketStore.getState().getTotalPrice()
   const shipping = 50 // Free shipping over 500 EGP
   // const tax = totalPrice * 0.14 // 14% tax
-  const finalTotal = totalPrice + shipping 
+  const finalTotal = totalPrice + shipping + extraCost 
 
   const handleCheckout = async () => {
     if (!isSignedIn) {
@@ -68,6 +70,7 @@ function BasketPage() {
         price: item.product.price || 0,
         quantity: item.quantity,
         image: item.product.image ? imageUrl(item.product.image).url() : "/placeholder.svg?height=80&width=80",
+        size: item.size,
       }))
 
       // Store cart data in sessionStorage for the payment page
@@ -125,14 +128,24 @@ function BasketPage() {
                     >
                       {item.product.name}
                     </h3>
-                    <p className="text-gray-600 mt-1">{(item.product.price ?? 0).toFixed(2)} EGP each</p>
+                    {item.product.slug?.current === "custom-tshirt" && extraCost > 0 && (
+ <p className="text-sm font-medium text-green-600 mt-1">
+ + {extraCost.toFixed(2)} EGP (Customization)
+ </p>
+ )}
+                    {item.size && <p className="text-gray-600 mt-1">Size: {item.size}</p>}
+
+                   {item?.product?.slug?.current ?(<><p className="text-gray-600 mt-1">{(item.product.price ?? 0).toFixed(2)} EGP each</p>
                     <p className="text-lg font-semibold text-gray-900 mt-2">
-                      Total: {((item.product.price ?? 0) * item.quantity).toFixed(2)} EGP
-                    </p>
+                      Total: {((item.product.price ?? 0) + extraCost * item.quantity).toFixed(2)  }EGP
+                    </p></>) :  (<><p className="text-gray-600 mt-1">{(item.product.price ?? 0).toFixed(2)} EGP each</p>
+                    <p className="text-lg font-semibold text-gray-900 mt-2">
+                      Total: {((item.product.price ?? 0) * item.quantity).toFixed(2)  }EGP
+                    </p></>)}
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <AddToBasketButton product={item.product} />
+                    <AddToBasketButton selectedSize={item.size} product={item.product}  />
                   </div>
                 </div>
               </div>

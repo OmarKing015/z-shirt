@@ -7,16 +7,18 @@ import { costEngine } from "@/lib/costEngine";
 export interface BasketItem {
   product: Product;
   quantity: number;
+  size: string; // Added size to BasketItem
+  extraCost: number; // Added extraCost to BasketItem
 }
 
 export interface BasketState {
   items: BasketItem[];
-  addItem: (product: Product) => void;
-  removeItem: (productId: string) => void; // Changed to productId
-  getItemCount: (productId: string) => number;
+  addItem: (product: Product, size: string, extraCost: number) => void; // Modified signature to include size and extraCost
+  removeItem: (productId: string, size: string) => void;
+  getItemCount: (productId: string, size: string) => number;
   clearBasket: () => void;
   getTotalPrice: () => number;
-  getGroupedItems: () => BasketItem[]; // Renamed for consistency
+  getGroupedItems: () => BasketItem[];
 }
 
 interface EditorState {
@@ -26,11 +28,12 @@ interface EditorState {
   toggleShirtStyle: () => void;
   totalCost: number;
   setTotalCost: (cost: number) => void;
-  
+
   history: string[];
   setHistory: (history: string[]) => void;
   historyIndex: number;
-  setHistoryIndex: (index: number) => void;
+  setHistoryIndex: (index:any) => void;
+  saveCanvasState: () => void;
 
   undo: () => void;
   redo: () => void;
@@ -46,54 +49,69 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const initialState = JSON.stringify(canvas.toJSON(['cost', 'type']));
     set({ history: [initialState], historyIndex: 0, canUndo: false, canRedo: false });
     // Set initial cost
-    const cost = costEngine.calculate(canvas.getObjects());
-    set({ totalCost: cost });
+    const { totalCost } = costEngine.calculate(canvas.getObjects());
+    set({ totalCost: totalCost });
+
+    // Add event listeners for canvas modifications to save state
+    canvas.on({
+      'object:added': get().saveCanvasState,
+      'object:modified': get().saveCanvasState,
+      'object:removed': get().saveCanvasState,
+      'after:render': () => {
+        const { totalCost } = costEngine.calculate(canvas.getObjects());
+        if (totalCost !== get().totalCost) {
+          set({ totalCost: totalCost });
+        }
+      },
+    });
   },
-  
   shirtStyle: "slim",
   toggleShirtStyle: () =>
     set((state) => ({
       shirtStyle: state.shirtStyle === "slim" ? "oversized" : "slim",
     })),
-    
   totalCost: 6.00, // Initial base cost
   setTotalCost: (cost) => set({ totalCost: cost }),
-
   history: [],
   setHistory: (history) => set({ history, canUndo: get().historyIndex > 0, canRedo: get().historyIndex < history.length - 1 }),
   historyIndex: -1,
   setHistoryIndex: (index) => set({ historyIndex: index, canUndo: index > 0, canRedo: index < get().history.length - 1 }),
-
+  saveCanvasState: () => {
+    const { canvas, history, historyIndex, setHistory, setHistoryIndex } = get();
+    if (canvas) {
+      const json = JSON.stringify(canvas.toJSON(['cost', 'type']));
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(json);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  },
   undo: () => {
     const { history, historyIndex, canvas, setHistoryIndex, setTotalCost } = get();
     if (historyIndex > 0 && canvas) {
       const newIndex = historyIndex - 1;
-      // Disable callbacks to prevent history duplication
       canvas.loadFromJSON(JSON.parse(history[newIndex]), () => {
         canvas.renderAll();
         const objects = canvas.getObjects();
         const cost = costEngine.calculate(objects);
-        setTotalCost(cost);
+        setTotalCost(cost.totalCost);
         setHistoryIndex(newIndex);
       });
     }
   },
-
   redo: () => {
     const { history, historyIndex, canvas, setHistoryIndex, setTotalCost } = get();
     if (historyIndex < history.length - 1 && canvas) {
       const newIndex = historyIndex + 1;
-      // Disable callbacks to prevent history duplication
       canvas.loadFromJSON(JSON.parse(history[newIndex]), () => {
         canvas.renderAll();
         const objects = canvas.getObjects();
         const cost = costEngine.calculate(objects);
-        setTotalCost(cost);
+        setTotalCost(cost.totalCost);
         setHistoryIndex(newIndex);
       });
     }
   },
-  
   canUndo: false,
   canRedo: false,
 }));
@@ -102,27 +120,27 @@ const useBasketStore = create<BasketState>()(
   persist(
     (set, get) => ({
       items: [],
-      addItem: (product) =>
+      addItem: (product, size, extraCost) =>
         set((state) => {
           const existingItem = state.items.find(
-            (item) => item.product._id === product._id
+            (item) => product._id === item.product._id && size === item.size
           );
           if (existingItem) {
             return {
               items: state.items.map((item) =>
-                item.product._id === product._id
-                  ? { ...item, quantity: item.quantity + 1 }
+                 product._id === item.product._id && size === item.size
+                  ? { ...item, quantity: item.quantity + 1 } // add extraCost
                   : item
               ),
             };
           } else {
-            return { items: [...state.items, { product, quantity: 1 }] };
+            return { items: [...state.items, { product, quantity: 1, size, extraCost }] }; // add extraCost
           }
         }),
-      removeItem: (productId) =>
+      removeItem: (productId, size) =>
         set((state) => ({
           items: state.items.reduce((acc, item) => {
-            if (item.product._id === productId) {
+            if (item.product._id === productId && item.size === size) {
               if (item.quantity > 1) {
                 acc.push({ ...item, quantity: item.quantity - 1 });
               } else {
@@ -137,19 +155,19 @@ const useBasketStore = create<BasketState>()(
       clearBasket: () => set({ items: [] }),
       getTotalPrice: () => {
         return get().items.reduce(
-          (total, item) => total + (item.product.price ?? 0) * item.quantity,
+          (total, item) => total + (item.product.price ?? 0) * item.quantity + item.extraCost,
           0
         );
       },
-      getItemCount: (productId) => {
-        const item = get().items.find((item) => item.product._id === productId);
+      getItemCount: (productId, size) => {
+        const item = get().items.find((item) => item.product._id === productId && item.size === size);
         return item ? item.quantity : 0;
       },
       getGroupedItems: () => get().items,
     }),
     {
       name: "basket-store",
-      storage: createJSONStorage(() => localStorage), // Added storage
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

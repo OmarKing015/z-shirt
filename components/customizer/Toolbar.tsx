@@ -1,25 +1,46 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useRef, useState } from "react"
-import { fabric } from "fabric"
-import { Type, ImagePlus, Undo, Redo, Trash2, Palette, Ruler, Download } from "lucide-react"
-import { useEditorStore } from "../../store/store"
-import useBasketStore from "../../store/store"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useToast } from "./use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import JSZip from "jszip"
-import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
-import { useAppContext } from "@/context/context"
-import { useUser } from "@clerk/nextjs"
-import { redirect } from "next/navigation"
+import type React from "react";
+import { useRef, useState, useEffect } from "react";
+import { fabric } from "fabric";
+import {
+  Type,
+  ImagePlus,
+  Undo,
+  Redo,
+  Trash2,
+  Palette,
+  Ruler,
+  Download,
+} from "lucide-react";
+import { useEditorStore } from "../../store/store";
+import useBasketStore from "../../store/store";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useToast } from "./use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import JSZip from "jszip";
+import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug";
+import { useAppContext } from "@/context/context";
+import { useUser } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+import { costEngine } from "@/lib/costEngine";
 
 const TEMPLATE_LOGOS = [
   { name: "Logo 1", url: "/logos/logo1.png" },
@@ -28,7 +49,7 @@ const TEMPLATE_LOGOS = [
   { name: "Logo 4", url: "/logos/logo4.png" },
   { name: "Logo 5", url: "/logos/logo5.png" },
   { name: "Logo 6", url: "/logos/logo6.png" },
-]
+];
 
 const SHIRT_COLORS = [
   { name: "White", value: "#FFFFFF" },
@@ -37,31 +58,69 @@ const SHIRT_COLORS = [
   { name: "Red", value: "#FF0000" },
   { name: "Green", value: "#008000" },
   { name: "Yellow", value: "#FFFF00" },
-]
+];
 
-const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
+const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
 
 const FONTS = {
-  english: ["Inter", "Arial", "Helvetica", "Times New Roman", "Courier New", "Georgia"],
-  arabic: ["Amiri", "Cairo", "Scheherazade", "Tajawal", "Lateef", "Almarai"],
-}
+  english: [
+    "Inter",
+    "Arial",
+    "Helvetica",
+    "Times New Roman",
+    "Courier New",
+    "Georgia",
+  ],
+  arabic: [
+    "Noto Sans Arabic",
+    "Amiri",
+    "Cairo",
+    "Almarai",
+    "Lalezar",
+    "Markazi Text",
+    "Mada",
+    "Tajawal",
+    "El Messiri",
+    "Lemonada",
+    "Changa",
+    "Reem Kufi",
+  ],
+};
 
 export default function Toolbar() {
-  const {user}= useUser()
-  const { canvas, shirtStyle, toggleShirtStyle, undo, redo, canUndo, canRedo } = useEditorStore()
-  const { addItem } = useBasketStore()
-  const { setAssetId } = useAppContext();
-  const [text, setText] = useState("Hello")
-  const [selectedFont, setSelectedFont] = useState("Inter")
-  const [selectedSize, setSelectedSize] = useState("M")
-  const [selectedColor, setSelectedColor] = useState("#FFFFFF")
-  const [isArabic, setIsArabic] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const uploadInputRef = useRef<HTMLInputElement>(null)
-  const { toast } = useToast()
+  const { user } = useUser();
+  const { addItem } = useBasketStore();
+  const {
+    canvas,
+    shirtStyle,
+    toggleShirtStyle,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    totalCost,
+  } = useEditorStore();
+  const { setAssetId, setExtraCost, extraCost } = useAppContext();
+  const [text, setText] = useState("Hello");
+  const [selectedFont, setSelectedFont] = useState("Inter");
+  const [selectedSize, setSelectedSize] = useState("M");
+  const [selectedColor, setSelectedColor] = useState("#FFFFFF");
+  const [isArabic, setIsArabic] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (canvas) {
+      const { totalCost: calculatedTotalCost, extraCost: calculatedExtraCost } =
+        costEngine.calculate(canvas.getObjects());
+      useEditorStore.getState().setTotalCost(calculatedTotalCost);
+      setExtraCost(calculatedExtraCost);
+    }
+  }, [canvas, setExtraCost]);
 
   const addText = () => {
-    if (!canvas) return
+    if (!canvas) return;
     const textObject = new fabric.IText(text || "Type here", {
       left: 150,
       top: 200,
@@ -70,157 +129,161 @@ export default function Toolbar() {
       // @ts-ignore
       cost: text.length * 0.1,
       type: "text",
-    })
-    canvas.add(textObject)
-    canvas.setActiveObject(textObject)
-    canvas.renderAll()
-  }
+    });
+    canvas.add(textObject);
+    canvas.setActiveObject(textObject);
+    canvas.renderAll();
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!canvas || !e.target.files || !e.target.files[0]) return
-    const file = e.target.files[0]
+    if (!canvas || !e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid File",
         description: "Please upload an image file.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
     fabric.Image.fromURL(URL.createObjectURL(file), (img: any) => {
-      img.scaleToWidth(150)
+      img.scaleToWidth(150);
       img.set({
         left: 175,
         top: 175,
         // @ts-ignore
         cost: 5,
         type: "logo",
-      })
-      canvas.add(img)
-      canvas.setActiveObject(img)
-      canvas.renderAll()
-    })
-  }
+      });
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+    });
+  };
 
   const addTemplateLogo = (logoUrl: string) => {
-    if (!canvas) return
+    if (!canvas) return;
     fabric.Image.fromURL(logoUrl, (img: any) => {
-      img.scaleToWidth(150)
+      img.scaleToWidth(150);
       img.set({
         left: 175,
         top: 175,
         // @ts-ignore
         cost: 3,
         type: "logo",
-      })
-      canvas.add(img)
-      canvas.setActiveObject(img)
-      canvas.renderAll()
-    })
-  }
+      });
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+    });
+  };
 
   const deleteActiveObject = () => {
-    if (!canvas) return
-    const activeObject = canvas.getActiveObject()
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
     if (activeObject) {
-      canvas.remove(activeObject)
-      canvas.renderAll()
+      canvas.remove(activeObject);
+      canvas.renderAll();
     }
-  }
+  };
 
   const changeFont = (font: string) => {
-    setSelectedFont(font)
-    if (!canvas) return
-    const activeObject = canvas.getActiveObject()
+    setSelectedFont(font);
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
     if (activeObject && activeObject.type === "i-text") {
       // @ts-ignore
-      activeObject.set({ fontFamily: font })
-      canvas.renderAll()
+      activeObject.set({ fontFamily: font });
+      canvas.renderAll();
     }
-  }
+  };
 
   const updateShirtColor = (color: string) => {
-    setSelectedColor(color)
+    setSelectedColor(color);
     if (canvas) {
-      canvas.renderAll()
+      canvas.renderAll();
     }
-  }
+  };
 
   // Helper function to convert data URL to blob
   const dataURLtoBlob = (dataURL: string): Blob => {
-    const arr = dataURL.split(",")
-    const mime = arr[0].match(/:(.*?);/)![1]
-    const bstr = atob(arr[1])
-    let n = bstr.length
-    const u8arr = new Uint8Array(n)
+    const arr = dataURL.split(",");
+    const mime = arr[0].match(/:(.*?);/)![1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
     while (n--) {
-      u8arr[n] = bstr.charCodeAt(n)
+      u8arr[n] = bstr.charCodeAt(n);
     }
-    return new Blob([u8arr], { type: mime })
-  }
+    return new Blob([u8arr], { type: mime });
+  };
 
   // Helper function to wait for canvas rendering
   const waitForCanvasRender = (canvas: fabric.Canvas): Promise<void> => {
     return new Promise((resolve) => {
-      canvas.renderAll()
+      canvas.renderAll();
       // Use requestAnimationFrame to ensure rendering is complete
       requestAnimationFrame(() => {
-        setTimeout(resolve, 100) // Additional small delay to ensure complete rendering
-      })
-    })
-  }
+        setTimeout(resolve, 100); // Additional small delay to ensure complete rendering
+      });
+    });
+  };
 
   // Helper function to generate individual element images
-  const generateElementImages = async (): Promise<{ name: string; blob: Blob }[]> => {
-    if (!canvas) return []
+  const generateElementImages = async (): Promise<
+    { name: string; blob: Blob }[]
+  > => {
+    if (!canvas) return [];
 
-    const elements: { name: string; blob: Blob }[] = []
-    const objects = canvas.getObjects()
+    const elements: { name: string; blob: Blob }[] = [];
+    const objects = canvas.getObjects();
 
-    console.log(`Found ${objects.length} objects on canvas`)
+    console.log(`Found ${objects.length} objects on canvas`);
 
     for (let i = 0; i < objects.length; i++) {
-      const obj = objects[i]
-      console.log(`Processing object ${i}:`, obj.type, obj)
+      const obj = objects[i];
+      console.log(`Processing object ${i}:`, obj.type, obj);
 
       try {
         // Get object bounds
-        const bounds = obj.getBoundingRect()
-        const padding = 20 // Add some padding around the object
+        const bounds = obj.getBoundingRect();
+        const padding = 20; // Add some padding around the object
 
         // Create a temporary canvas with proper dimensions
-        const tempCanvasElement = document.createElement("canvas")
-        tempCanvasElement.width = bounds.width + padding * 2
-        tempCanvasElement.height = bounds.height + padding * 2
+        const tempCanvasElement = document.createElement("canvas");
+        tempCanvasElement.width = bounds.width + padding * 2;
+        tempCanvasElement.height = bounds.height + padding * 2;
 
         const tempCanvas = new fabric.Canvas(tempCanvasElement, {
-          width: bounds.width + padding ,
-          height: bounds.height + padding ,
+          width: bounds.width + padding,
+          height: bounds.height + padding,
           backgroundColor: "transparent",
-        })
+        });
 
         // Clone the object
-        const clonedObj = await new Promise<fabric.Object>((resolve, reject) => {
-          obj.clone((cloned: fabric.Object) => {
-            if (cloned) {
-              resolve(cloned)
-            } else {
-              reject(new Error("Failed to clone object"))
-            }
-          })
-        })
+        const clonedObj = await new Promise<fabric.Object>(
+          (resolve, reject) => {
+            obj.clone((cloned: fabric.Object) => {
+              if (cloned) {
+                resolve(cloned);
+              } else {
+                reject(new Error("Failed to clone object"));
+              }
+            });
+          }
+        );
 
         // Position the cloned object in the center of the temp canvas
         clonedObj.set({
           left: padding,
           top: padding,
-        })
+        });
 
         // Add the object to temp canvas
-        tempCanvas.add(clonedObj)
+        tempCanvas.add(clonedObj);
 
         // Wait for rendering to complete
-        await waitForCanvasRender(tempCanvas)
+        await waitForCanvasRender(tempCanvas);
 
         // Generate image with white background for better visibility
         const dataURL = tempCanvas.toDataURL({
@@ -228,86 +291,91 @@ export default function Toolbar() {
           quality: 1,
           multiplier: 2, // Higher resolution
           enableRetinaScaling: false,
-          
-        })
+        });
 
-        console.log(`Generated dataURL for object ${i}:`, dataURL.substring(0, 100) + "...")
+        console.log(
+          `Generated dataURL for object ${i}:`,
+          dataURL.substring(0, 100) + "..."
+        );
 
-        const blob = dataURLtoBlob(dataURL)
+        const blob = dataURLtoBlob(dataURL);
 
         // @ts-ignore
-        const elementType = obj.type || "element"
-        let elementName = `${elementType}_${i + 1}`
+        const elementType = obj.type || "element";
+        let elementName = `${elementType}_${i + 1}`;
 
         // For text objects, use the actual text as name
         if (obj.type === "i-text" || obj.type === "text") {
           // @ts-ignore
-          const textContent = obj.text || "text"
-          elementName = `text_${textContent.substring(0, 10).replace(/[^a-zA-Z0-9]/g, "_")}_${i + 1}`
+          const textContent = obj.text || "text";
+          elementName = `text_${textContent.substring(0, 10).replace(/[^a-zA-Z0-9]/g, "_")}_${i + 1}`;
         } else if (obj.type === "image") {
-          elementName = `logo_${i + 1}`
+          elementName = `logo_${i + 1}`;
         }
 
         elements.push({
           name: `${elementName}.png`,
           blob,
-        })
+        });
 
         // Clean up temp canvas
-        tempCanvas.dispose()
+        tempCanvas.dispose();
       } catch (error) {
-        console.error(`Error processing object ${i}:`, error)
+        console.error(`Error processing object ${i}:`, error);
       }
     }
 
-    console.log(`Generated ${elements.length} element images`)
-    return elements
-  }
+    console.log(`Generated ${elements.length} element images`);
+    return elements;
+  };
   async function uploadZipFile(file: Blob) {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await fetch('/api/upload', {
-      method: 'POST',
+    const response = await fetch("/api/upload", {
+      method: "POST",
       body: formData,
     });
-       console.log("Here are the results" , response.json);
+    console.log("Here are the results", response.json);
 
     if (!response.ok) {
-      throw new Error('File upload failed');
+      throw new Error("File upload failed");
     }
     const result = await response.json();
     return result;
-
   }
+
   const orderNow = async () => {
     if (!canvas) {
       toast({
         title: "Error",
         description: "Canvas not found. Please try again.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsProcessing(true)
+    setIsProcessing(true);
 
     try {
       // Generate unique ID for the basket item
-      const designId = `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const designId = `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      console.log("Starting design export process...")
+      console.log("Starting design export process...");
 
       // Ensure canvas is fully rendered
-      await waitForCanvasRender(canvas)
+      await waitForCanvasRender(canvas);
 
       // Set canvas background color to match selected shirt color
-      const originalBackground = canvas.backgroundColor as string | fabric.Pattern | fabric.Gradient // Explicitly type originalBackground
+      const originalBackground = canvas.backgroundColor as
+        | string
+        | fabric.Pattern
+        | fabric.Gradient; // Explicitly type originalBackground
       canvas.setBackgroundColor(selectedColor, () => {
-        canvas.renderAll()
-      })
+        canvas.renderAll();
+      });
 
       // Wait for background to be applied
-      await new Promise((resolve) => setTimeout(resolve, 200))
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Generate the complete t-shirt design PNG
       const fullDesignDataURL = canvas.toDataURL({
@@ -315,33 +383,36 @@ export default function Toolbar() {
         quality: 1,
         multiplier: 2, // Higher resolution
         enableRetinaScaling: false,
-      })
+      });
 
-      console.log("Full design generated:", fullDesignDataURL.substring(0, 100) + "...")
+      console.log(
+        "Full design generated:",
+        fullDesignDataURL.substring(0, 100) + "..."
+      );
 
       // Restore original background
       canvas.setBackgroundColor(originalBackground, () => {
-        canvas.renderAll()
-      })
+        canvas.renderAll();
+      });
 
-      const fullDesignBlob = dataURLtoBlob(fullDesignDataURL)
+      const fullDesignBlob = dataURLtoBlob(fullDesignDataURL);
 
       // Generate individual element images
-      console.log("Generating individual element images...")
-      const elementImages = await generateElementImages()
+      console.log("Generating individual element images...");
+      const elementImages = await generateElementImages();
 
       // Create ZIP file
-      const zip = new JSZip()
+      const zip = new JSZip();
 
       // Add the full design
-      zip.file("full_design.png", fullDesignBlob)
+      zip.file("full_design.png", fullDesignBlob);
 
       // Add individual elements if any exist
       if (elementImages.length > 0) {
-        const elementsFolder = zip.folder("elements")
+        const elementsFolder = zip.folder("elements");
         elementImages.forEach((element) => {
-          elementsFolder?.file(element.name, element.blob)
-        })
+          elementsFolder?.file(element.name, element.blob);
+        });
       }
 
       // Add design information as JSON
@@ -349,7 +420,8 @@ export default function Toolbar() {
         id: designId,
         name: `Custom T-Shirt - ${selectedSize} - ${SHIRT_COLORS.find((c) => c.value === selectedColor)?.name || "White"} - ${shirtStyle}`,
         size: selectedSize,
-        color: SHIRT_COLORS.find((c) => c.value === selectedColor)?.name || "White",
+        color:
+          SHIRT_COLORS.find((c) => c.value === selectedColor)?.name || "White",
         colorHex: selectedColor,
         style: shirtStyle,
         font: selectedFont,
@@ -361,9 +433,9 @@ export default function Toolbar() {
           width: canvas.width,
           height: canvas.height,
         },
-      }
+      };
 
-      zip.file("design_info.json", JSON.stringify(designInfo, null, 2))
+      zip.file("design_info.json", JSON.stringify(designInfo, null, 2));
 
       // Add a readme file with instructions
       const readmeContent = `T-Shirt Design Package
@@ -382,44 +454,42 @@ Design Details:
 - Created: ${new Date().toLocaleString()}
 
 Design ID: ${designId}
-`
+`;
 
-      zip.file("README.txt", readmeContent)
+      zip.file("README.txt", readmeContent);
 
       // Generate and download ZIP file
-      console.log("Generating ZIP file...")
-      const zipBlob = await zip.generateAsync({ type: "blob" })
-      const url = URL.createObjectURL(zipBlob)
-      const link = document.createElement("a")
-      // link.href = url
-      // link.download = `${designInfo.name.replace(/[^a-zA-Z0-9]/g, "_")}_${designId}.zip`
-      // document.body.appendChild(link)
-      // link.click()
-      // document.body.removeChild(link)
-      // URL.revokeObjectURL(url)
+      console.log("Generating ZIP file...");
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      // link.href = url;
+      // link.download = `${designInfo.name.replace(/[^a-zA-Z0-9]/g, "_")}_${designId}.zip`;
+      // document.body.appendChild(link);
+      // link.click();
+      // document.body.removeChild(link);
 
       // Add item to basket with the design ID
-    
-      const product = await getProductBySlug("custom-tshirt")
-      addItem(product)
-      uploadZipFile(zipBlob) 
+
+      const product = await getProductBySlug("custom-tshirt");
+      addItem(product, selectedSize, extraCost);
+      uploadZipFile(zipBlob);
       toast({
         title: "Design Downloaded & Added to Basket!",
         description: `Your custom t-shirt design has been downloaded and added to your basket. Design ID: ${designId}`,
-      })
+      });
       redirect("/basket");
-
     } catch (error) {
-      console.error("Failed to process design:", error)
+      console.error("Failed to process design:", error);
       toast({
         title: "Error",
         description: "Failed to process your design. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   return (
     <TooltipProvider>
@@ -431,7 +501,11 @@ Design ID: ${designId}
           </h2>
           <div className="flex items-center space-x-2">
             <Label htmlFor="shirt-style-toggle">Slim Fit</Label>
-            <Switch id="shirt-style-toggle" checked={shirtStyle === "oversized"} onCheckedChange={toggleShirtStyle} />
+            <Switch
+              id="shirt-style-toggle"
+              checked={shirtStyle === "oversized"}
+              onCheckedChange={toggleShirtStyle}
+            />
             <Label htmlFor="shirt-style-toggle">Oversized</Label>
           </div>
         </div>
@@ -441,7 +515,11 @@ Design ID: ${designId}
         {/* Size Selection */}
         <div className="flex flex-col gap-4">
           <h2 className="font-semibold text-sm text-muted-foreground">Size</h2>
-          <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="flex flex-wrap gap-2">
+          <RadioGroup
+            value={selectedSize}
+            onValueChange={setSelectedSize}
+            className="flex flex-wrap gap-2"
+          >
             {SHIRT_SIZES.map((size) => (
               <div key={size} className="flex items-center space-x-1">
                 <RadioGroupItem value={size} id={`size-${size}`} />
@@ -509,7 +587,11 @@ Design ID: ${designId}
 
                 <div className="flex items-center space-x-2 mt-2">
                   <Label htmlFor="language-toggle">English</Label>
-                  <Switch id="language-toggle" checked={isArabic} onCheckedChange={setIsArabic} />
+                  <Switch
+                    id="language-toggle"
+                    checked={isArabic}
+                    onCheckedChange={setIsArabic}
+                  />
                   <Label htmlFor="language-toggle">Arabic</Label>
                 </div>
 
@@ -523,13 +605,19 @@ Design ID: ${designId}
                   <SelectContent>
                     {(isArabic ? FONTS.arabic : FONTS.english).map((font) => (
                       <SelectItem key={font} value={font}>
-                        <span style={{ fontFamily: font }}>{font}</span>
+                        <span style={{ fontFamily: font }}>
+                          {isArabic ? "عربي" : "Hello"}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" onClick={addText} className="mt-2 bg-transparent">
+                <Button
+                  variant="outline"
+                  onClick={addText}
+                  className="mt-2 bg-transparent"
+                >
                   <Type className="mr-2" /> Add Text
                 </Button>
               </div>
@@ -537,7 +625,10 @@ Design ID: ${designId}
 
             <TabsContent value="logo" className="space-y-4">
               <div className="flex flex-col gap-2">
-                <Button variant="outline" onClick={() => uploadInputRef.current?.click()}>
+                <Button
+                  variant="outline"
+                  onClick={() => uploadInputRef.current?.click()}
+                >
                   <ImagePlus className="mr-2" /> Upload Custom Logo
                 </Button>
                 <input
@@ -556,7 +647,11 @@ Design ID: ${designId}
                       className="border rounded p-2 hover:bg-accent"
                       onClick={() => addTemplateLogo(logo.url)}
                     >
-                      <img src={logo.url || "/placeholder.svg"} alt={logo.name} className="w-full h-auto" />
+                      <img
+                        src={logo.url || "/placeholder.svg"}
+                        alt={logo.name}
+                        className="w-full h-auto"
+                      />
                     </button>
                   ))}
                 </div>
@@ -573,7 +668,9 @@ Design ID: ${designId}
 
         {/* History */}
         <div className="flex-grow flex flex-col gap-4">
-          <h2 className="font-semibold text-sm text-muted-foreground">History</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground">
+            History
+          </h2>
           <div className="grid grid-cols-2 gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -602,13 +699,14 @@ Design ID: ${designId}
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
-          <h2 className="font-semibold text-sm text-muted-foreground">Actions</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground">
+            Actions
+          </h2>
           <Button onClick={orderNow} size="lg" disabled={isProcessing}>
-            <Download className="mr-2" />
-            {isProcessing ? "Processing..." : "Download & Add to Basket"}
+            {isProcessing ? "Processing..." : " Add to Basket"}
           </Button>
         </div>
       </aside>
     </TooltipProvider>
-  )
+  );
 }
