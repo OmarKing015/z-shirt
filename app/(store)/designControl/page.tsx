@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import { Download, Upload, FileText, Palette, Trash2 } from "lucide-react"
 import { toast } from "@/components/customizer/use-toast"
 import Image from "next/image"
+import { Protect } from "@clerk/nextjs"
+import { redirect } from "next/navigation"
 
 interface ZippedFile {
   _id: string
@@ -222,6 +224,7 @@ export default function AdminPanel() {
   }
 
   return (
+    <Protect role="admin" fallback={redirect("/")}>
     <div className="min-h-screen bg-white">
       <div className="bg-blue-500 text-white p-6">
         <h1 className="text-3xl font-bold">Admin Panel</h1>
@@ -465,5 +468,5 @@ export default function AdminPanel() {
         </Tabs>
       </div>
     </div>
-  )
+</Protect>  )
 }
