@@ -227,12 +227,7 @@ const {extraCost} = useAppContext()
                   )}
                 </button>
               ) : (
-                <SignInButton mode="modal">
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Sign in to Checkout
-                  </button>
-                </SignInButton>
+                <SignInButton />
               )}
 
               <div className="mt-4 flex items-center justify-center space-x-4 text-xs text-gray-500">

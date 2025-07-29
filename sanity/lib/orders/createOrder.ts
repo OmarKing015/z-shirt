@@ -2,6 +2,7 @@ import { client } from "@/sanity/lib/client"
 import { backendClient } from "../backendClient"
 import { auth } from "@clerk/nextjs/server"
 import { updateMultipleProductsStock } from "../products/updateStocks"
+import { useAppContext } from "@/context/context"
 
 export interface OrderData {
   orderId: string
@@ -33,6 +34,25 @@ export interface OrderData {
   createdAt: string
 }
 
+
+async function uploadZipFile(file: Blob) {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  })
+
+  console.log("Here are the results", response.json)
+
+  if (!response.ok) {
+    throw new Error("File upload failed")
+  }
+
+  const result = await response.json()
+  return result
+}
 export async function createOrder(orderData: OrderData) {
   try {
     const order = await backendClient.create({
@@ -42,6 +62,7 @@ export async function createOrder(orderData: OrderData) {
    
 
     if (order) {
+      // uploadZipFile(zipFile)
       // Deduct stock for each item in the order
       const stockUpdateItems = orderData.items.map((item) => {
         console.log(`Preparing item for stock update: Product _ref (expected productId) = ${item.product._ref}, Quantity = ${item.quantity}`)

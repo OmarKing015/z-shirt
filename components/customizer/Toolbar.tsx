@@ -17,9 +17,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import JSZip from "jszip"
 import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
 import { useAppContext } from "@/context/context"
-import { useUser } from "@clerk/nextjs"
+import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs"
 import { redirect } from "next/navigation"
 import { costEngine } from "@/lib/costEngine"
+
+interface TEMPLATE_LOGOS_TYPE{
+  name: string,
+  url: string,
+}
 
 const TEMPLATE_LOGOS = [
   { name: "Logo 1", url: "/logos/logo1.png" },
@@ -74,17 +79,39 @@ export default function Toolbar() {
   const { user } = useUser()
   const { addItem } = useBasketStore()
   const { canvas, shirtStyle, toggleShirtStyle, undo, redo, canUndo, canRedo, totalCost } = useEditorStore()
-  const { setAssetId, setExtraCost, extraCost } = useAppContext()
+  const { setAssetId, setExtraCost, extraCost,setZipedFile } = useAppContext()
   const [selectedFont, setSelectedFont] = useState("Inter")
   const [selectedFontColor, setSelectedFontColor] = useState("#000000")
   const [selectedSize, setSelectedSize] = useState("M")
   const [selectedColor, setSelectedColor] = useState("#FFFFFF")
   const [isArabic, setIsArabic] = useState(false)
   const [text, setText] = useState("English")
+  const [logos, setLogos] = useState([])
   const [isProcessing, setIsProcessing] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
+  useEffect(() => {const fetchData = async () => {
+    try {
+      const [ logosRes] = await Promise.all([
+        // fetch("/api/admin/color-swatches"),
+        fetch("/api/admin/logos")
+      ])
+
+      const logoData = await logosRes.json()
+
+      setLogos(logoData)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch data",
+        variant: "destructive",
+      })
+    }
+  }
+fetchData()
+  },[])
+  
   useEffect(() => {
     if (canvas) {
       const { totalCost: calculatedTotalCost, extraCost: calculatedExtraCost } = costEngine.calculate(
@@ -456,8 +483,10 @@ Design ID: ${designId}`
       const product = await getProductBySlug("custom-tshirt")
       addItem(product, selectedSize, extraCost)
 
-      uploadZipFile(zipBlob)
+      // uploadZipFile(zipBlob)
+      setZipedFile(zipBlob)
 
+      
       toast({
         title: "Design Downloaded & Added to Basket!",
         description: `Your custom t-shirt design has been downloaded and added to your basket. Design ID: ${designId}`,
@@ -640,13 +669,13 @@ Design ID: ${designId}`
                 />
                 <Label className="mt-4">Template Logos</Label>
                 <div className="grid grid-cols-3 gap-2 mt-2">
-                  {TEMPLATE_LOGOS.map((logo, index) => (
+                  {logos?.map((logo : any, index) => (
                     <button
                       key={index}
                       className="border rounded p-2 hover:bg-accent"
-                      onClick={() => addTemplateLogo(logo.url)}
+                      onClick={() => addTemplateLogo(logo.imageUrl)}
                     >
-                      <img src={logo.url || "/placeholder.svg"} alt={logo.name} className="w-full h-auto" />
+                      <img src={logo.imageUrl || "/placeholder.svg"} alt={logo.name} className="w-full h-auto" />
                     </button>
                   ))}
                 </div>
@@ -692,9 +721,13 @@ Design ID: ${designId}`
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <h2 className="font-semibold text-sm text-muted-foreground">Actions</h2>
-          <Button onClick={orderNow} size="lg" disabled={isProcessing}>
+          <SignedIn >   <Button onClick={orderNow} size="lg" disabled={isProcessing}>
             {isProcessing ? "Processing..." : " Add to Basket"}
-          </Button>
+          </Button></SignedIn>
+          <SignedOut>
+            <SignInButton />
+          </SignedOut>
+       
         </div>
       </aside>
     </TooltipProvider>
