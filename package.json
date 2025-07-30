@@ -46,6 +46,9 @@
     "tailwind-merge": "^3.3.1",
     "zustand": "^5.0.6"
   },
+  "resolutions": {
+    "inquirer": "9.5.0"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@sanity/vision": "^3.99.0",
