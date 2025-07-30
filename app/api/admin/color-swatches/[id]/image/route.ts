@@ -4,11 +4,11 @@ import type { ColorSwatch } from "@/lib/models";
 const uri = process.env.MONGODB_API_KEY || "";
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await params
-    if (!params.id || !ObjectId.isValid(params.id)) {
+    if (!(await params).id || !ObjectId.isValid((await params).id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
@@ -17,7 +17,7 @@ export async function GET(
     const db = client.db("ZSHIRT");
     const collection = db.collection<ColorSwatch>("colorSwatches");
 
-    const swatch = await collection.findOne({ _id: new ObjectId(params.id) });
+    const swatch = await collection.findOne({ _id: new ObjectId((await params).id) });
 
     await client.close();
 
@@ -32,7 +32,7 @@ export async function GET(
         return NextResponse.json({ error: "Image data not found for this color swatch" }, { status: 404 });
     }
 
-    return new NextResponse(swatch.fileData.buffer, {
+    return new NextResponse(swatch.fileData.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": swatch.contentType,
       },

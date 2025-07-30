@@ -1,7 +1,7 @@
 import { Db, MongoClient } from "mongodb";
 
 import { ServerApiVersion } from 'mongodb';
-export const uri = process.env.MONGODB_API_KEY || "";
+const uri = process.env.MONGODB_API_KEY || "";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -11,7 +11,6 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-let clientPromise: Promise<MongoClient>
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -25,7 +24,6 @@ async function run() {
   }
 }
 export async function getDatabase(): Promise<Db> {
-  const client = await clientPromise
   return client?.db("admin")
 }
 

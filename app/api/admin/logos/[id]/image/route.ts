@@ -4,11 +4,11 @@ import type { Logo } from "@/lib/models";
 const uri = process.env.MONGODB_API_KEY || "";
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await params
-    if (!params.id || !ObjectId.isValid(params.id)) {
+    if (!(await params).id || !ObjectId.isValid((await params).id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
@@ -17,7 +17,7 @@ export async function DELETE(
     const db = client.db("ZSHIRT");
     const collection = db.collection("logos");
 
-    const result = await collection.deleteOne({ _id: new ObjectId(params.id) });
+    const result = await collection.deleteOne({ _id: new ObjectId((await params).id) });
 
     await client.close();
 
@@ -36,11 +36,11 @@ export async function DELETE(
 }
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await params
-    if (!params.id || !ObjectId.isValid(params.id)) {
+    if (!(await params).id || !ObjectId.isValid((await params).id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
@@ -49,7 +49,7 @@ export async function GET(
     const db = client.db("ZSHIRT");
     const collection = db.collection<Logo>("logos");
 
-    const logo = await collection.findOne({ _id: new ObjectId(params.id) });
+    const logo = await collection.findOne({ _id: new ObjectId((await params).id) });
 
     await client.close();
 
@@ -61,7 +61,7 @@ export async function GET(
         return NextResponse.json({ error: "Image data not found for this logo" }, { status: 404 });
     }
 
-    return new NextResponse(logo.fileData.buffer, {
+    return new NextResponse(logo.fileData.buffer  as ArrayBuffer, {
       headers: {
         "Content-Type": logo.contentType,
       },

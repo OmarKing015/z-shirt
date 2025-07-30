@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { MongoClient, ObjectId } from "mongodb";
 import type { File as FileModel } from "@/lib/models";
-export const uri = process.env.MONGODB_API_KEY || "";
+const uri = process.env.MONGODB_API_KEY || "";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await params;
@@ -14,7 +14,7 @@ export async function GET(
     const db = client.db("ZSHIRT");
     const collection = db.collection<FileModel>("uploads");
 
-    const file = await collection.findOne({ _id: new ObjectId(params.id) });
+    const file = await collection.findOne({ _id: new ObjectId((await params).id) });
 
     await client.close();
 
@@ -22,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    return new NextResponse(file.fileData.buffer, {
+    return new NextResponse(file.fileData.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": file.contentType,
         "Content-Disposition": `attachment; filename="${file.fileName}"`,

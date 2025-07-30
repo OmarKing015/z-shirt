@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { MongoClient, Binary } from "mongodb";
 import { currentUser } from "@clerk/nextjs/server";
 
-export const uri = process.env.MONGODB_API_KEY || "";
+const uri = process.env.MONGODB_API_KEY || "";
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { MongoClient, Binary } from "mongodb";
 import type { File as FileModel } from "@/lib/models";
 
-export const uri = process.env.MONGODB_API_KEY || "";
+const uri = process.env.MONGODB_API_KEY || "";
 
 export async function GET() {
     try {

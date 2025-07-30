@@ -295,6 +295,9 @@ export type ALL_CATEGORIES_QUERYResult = Array<{
 // Variable: All_PRODUCTS_QUERY
 // Query: *[_type == "product"] | order(name asc)
 export type All_PRODUCTS_QUERYResult = Array<{
+  size:string[];
+  success: any;
+  product: any;
   _id: string;
   _type: "product";
   _createdAt: string;
@@ -330,6 +333,9 @@ export type All_PRODUCTS_QUERYResult = Array<{
 // Variable: PRODUCTS_BY_CATEGORY_QUERY
 // Query: *[_type == "product" && references(*[_type == "category" && slug.current == $categorySlug]._id)] | order(name asc)
 export type PRODUCTS_BY_CATEGORY_QUERYResult = Array<{
+  size:string[];
+  success: any;
+  product: any;
   _id: string;
   _type: "product";
   _createdAt: string;

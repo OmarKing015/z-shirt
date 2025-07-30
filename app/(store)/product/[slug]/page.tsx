@@ -2,8 +2,8 @@ import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
 import { notFound, redirect } from "next/navigation"
 import ProductDetailClient from "@/components/ProductDetailClient"
 
-async function ProductPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
+async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const  slug  = (await params).slug
   const product = await getProductBySlug(slug)
 
   if (!product) {

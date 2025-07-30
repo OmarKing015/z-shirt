@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { MongoClient, ObjectId } from "mongodb";
-import { uri } from "../route";
+const uri = process.env.MONGODB_API_KEY || "";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!params.id || !ObjectId.isValid(params.id)) {
+    if (!(await params).id || !ObjectId.isValid((await params).id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
@@ -16,7 +16,7 @@ export async function DELETE(
     const db = client.db("ZSHIRT");
     const collection = db.collection("logos");
 
-    const result = await collection.deleteOne({ _id: new ObjectId(params.id) });
+    const result = await collection.deleteOne({ _id: new ObjectId((await params).id) });
 
     await client.close();
 

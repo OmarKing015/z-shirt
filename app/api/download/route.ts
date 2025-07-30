@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
-import { uri } from '@/lib/mongodbConfig';
+const uri = process.env.MONGODB_API_KEY || "";
 
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
-  const { filename } = params;
+  const { filename } =await params;
 
   const client = new MongoClient(uri);
   await client.connect();
