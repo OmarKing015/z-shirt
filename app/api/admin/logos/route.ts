@@ -35,15 +35,14 @@ export async function POST(request: NextRequest) {
         const db = client.db('ZSHIRT');
         const collection = db.collection<Logo>('logos');
 
-        let name: string, category: string, buffer: Buffer, imageContentType: string, fileName: string;
+        let name: string, buffer: Buffer, imageContentType: string, fileName: string;
 
         if (contentType.includes("application/json")) {
             const body = await request.json();
             name = body.name;
-            category = body.category;
             const imageUrl = body.imageUrl;
 
-            if (!name || !category || !imageUrl) {
+            if (!name || !imageUrl) {
                 return NextResponse.json({ error: "Missing required fields: name, category, and imageUrl" }, { status: 400 });
             }
 
@@ -60,9 +59,8 @@ export async function POST(request: NextRequest) {
             const formData = await request.formData();
             const file = formData.get("file") as File;
             name = formData.get("name") as string;
-            category = formData.get("category") as string;
 
-            if (!file || !name || !category) {
+            if (!file || !name ) {
                 return NextResponse.json({ error: "Missing required fields: file, name, and category" }, { status: 400 });
             }
 
@@ -77,7 +75,6 @@ export async function POST(request: NextRequest) {
 
         const result = await collection.insertOne({
             name,
-            category,
             fileData: new Binary(buffer),
             contentType: imageContentType,
             fileName,

@@ -21,18 +21,28 @@ export interface BasketState {
   getGroupedItems: () => BasketItem[];
 }
 
+interface ColorSwatch {
+  _id: string;
+  name: string;
+  hexCode?: string;
+  imageUrl: string;
+  createdAt: string;
+}
+
 interface EditorState {
   canvas: fabric.Canvas | null;
   setCanvas: (canvas: fabric.Canvas) => void;
   shirtStyle: "slim" | "oversized";
   toggleShirtStyle: () => void;
+  selectedColorSwatch: ColorSwatch | null;
+  setSelectedColorSwatch: (colorSwatch: ColorSwatch) => void;
   totalCost: number;
   setTotalCost: (cost: number) => void;
 
   history: string[];
   setHistory: (history: string[]) => void;
   historyIndex: number;
-  setHistoryIndex: (index:any) => void;
+  setHistoryIndex: (index: any) => void;
   saveCanvasState: () => void;
 
   undo: () => void;
@@ -70,6 +80,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => ({
       shirtStyle: state.shirtStyle === "slim" ? "oversized" : "slim",
     })),
+  selectedColorSwatch: null,
+  setSelectedColorSwatch: (colorSwatch: ColorSwatch) => set({ selectedColorSwatch: colorSwatch }),
   totalCost: 6.00, // Initial base cost
   setTotalCost: (cost) => set({ totalCost: cost }),
   history: [],
@@ -115,7 +127,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   canUndo: false,
   canRedo: false,
 }));
-
 const useBasketStore = create<BasketState>()(
   persist(
     (set, get) => ({

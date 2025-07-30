@@ -9,16 +9,16 @@ export async function GET() {
         const client = new MongoClient(uri);
         await client.connect();
         const db = client.db('ZSHIRT');
-        const files = await db.collection<FileModel>("upload").find({}).sort({ createdAt: -1 }).toArray();
+        const files = await db.collection<FileModel>("uploads").find({}).sort({ uploadDate: -1 }).toArray();
         await client.close();
 
         const formattedFiles = files?.map((file) => ({
-            _id: file._id?.toString(),
-            name: file.fileName,
-            userName:file.userName,
-            orderNumber:file.orderNumber,
+            _id: file?._id?.toString(),
+            name: file?.fileName,
+            userName:file?.userName,
+            orderNumber:file?.orderNumber,
             downloadUrl: `/api/admin/files/${file._id}/download`,
-            createdAt: file.uploadDate.toISOString(),
+            createdAt: file.uploadDate?.toISOString(),
         }));
 
         return NextResponse.json(formattedFiles);
@@ -32,10 +32,12 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const file = formData.get("file") as File;
-        const name = formData.get("name") as string;
-        const category = formData.get("category") as string;
+        const orderNumber = formData.get("orderNumber") as string;
+        const userName = formData.get("userName") as string;
+        const fileName = formData.get("fileName") as string;
 
-        if (!file || !name || !category) {
+
+        if (!file || !orderNumber || !userName || !fileName) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
@@ -45,14 +47,17 @@ export async function POST(request: NextRequest) {
         const client = new MongoClient(uri);
         await client.connect();
         const db = client.db('ZSHIRT');
-        const collection = db.collection('files');
+        const collection = db.collection('uploads');
 
         const result = await collection.insertOne({
-            name,
-            category,
-            file: new Binary(buffer),
+            orderNumber,
+            userName,
+            fileName,
+            fileData: new Binary(buffer),
             contentType: file.type,
-            createdAt: new Date(),
+            uploadDate: new Date(),
+            fileSize: file.size,
+            status: 'Uploaded'
         });
         await client.close();
 

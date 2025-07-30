@@ -75,6 +75,14 @@ const FONTS = {
   ],
 }
 
+interface ColorSwatch {
+  _id: string;
+  name: string;
+  // hexCode: string;
+  imageUrl: string;
+  createdAt: string;
+}
+
 export default function Toolbar() {
   const { user } = useUser()
   const { addItem } = useBasketStore()
@@ -90,11 +98,12 @@ export default function Toolbar() {
   const [isProcessing, setIsProcessing] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+  const [colorSwatches, setColorSwatches] = useState<ColorSwatch[]>([]);
 
   useEffect(() => {const fetchData = async () => {
     try {
-      const [ logosRes] = await Promise.all([
-        // fetch("/api/admin/color-swatches"),
+      const [ swatchesRes,logosRes] = await Promise.all([
+        fetch("/api/admin/color-swatches"),
         fetch("/api/admin/logos")
       ])
 
@@ -715,9 +724,7 @@ Design ID: ${designId}`
             </Tooltip>
           </div>
         </div>
-
         <Separator />
-
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <h2 className="font-semibold text-sm text-muted-foreground">Actions</h2>
@@ -727,7 +734,6 @@ Design ID: ${designId}`
           <SignedOut>
             <SignInButton />
           </SignedOut>
-       
         </div>
       </aside>
     </TooltipProvider>

@@ -15,7 +15,6 @@ export async function GET() {
         const formattedSwatches = swatches?.map((swatch) => ({
             _id: swatch._id?.toString(),
             name: swatch.name,
-            hexCode: swatch.hexCode,
             imageUrl: `/api/admin/color-swatches/${swatch._id}/image`,
             createdAt: swatch.createdAt.toISOString(),
         }));
