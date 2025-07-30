@@ -22,12 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Download, Upload, FileText, Palette, Trash2 } from "lucide-react";
 import { toast } from "@/components/customizer/use-toast";
 import Image from "next/image";
 import { Protect } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
 
 interface ZippedFile {
   _id: string;
@@ -98,7 +96,7 @@ export default function AdminPanel() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch data",
+        description: "Failed to fetch data" + error,
         variant: "destructive",
       });
     } finally {
@@ -129,7 +127,7 @@ export default function AdminPanel() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to download file",
+        description: "Failed to download file"+ error,
         variant: "destructive",
       });
     }
@@ -162,7 +160,7 @@ export default function AdminPanel() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to upload logo",
+        description: "Failed to upload logo"+ error,
         variant: "destructive",
       });
     } finally {
@@ -197,7 +195,7 @@ export default function AdminPanel() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to upload color swatch",
+        description: "Failed to upload color swatch"+ error,
         variant: "destructive",
       });
     } finally {
@@ -225,7 +223,7 @@ export default function AdminPanel() {
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to delete ${type}`,
+        description: `Failed to delete ${type}` + error,
         variant: "destructive",
       });
     }

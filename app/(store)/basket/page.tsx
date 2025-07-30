@@ -9,14 +9,12 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ShoppingCart, Package, CreditCard, ArrowRight, Trash2 } from "lucide-react"
-import { costEngine } from "@/lib/costEngine"
 import { useAppContext } from "@/context/context"
 
 function BasketPage() {
   const groupedItems = useBasketStore((state) => state.getGroupedItems())
   const clearBasket = useBasketStore((state) => state.clearBasket)
   const { isSignedIn } = useAuth()
-  const { user } = useUser()
   const router = useRouter()
   const [isClient, setIsClient] = useState(false)
   const [isLoading, setIsLoading] = useState(false)

@@ -78,7 +78,7 @@ async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
               </div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">No Products Found</h2>
               <p className="text-gray-600 mb-6">
-                We couldn't find any products in the {categoryName.toLowerCase()} category at the moment.
+                We couldn&apos;t find any products in the {categoryName.toLowerCase()} category at the moment.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
