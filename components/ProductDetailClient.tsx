@@ -10,18 +10,23 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import AddToBasketButton from "@/components/AddToBasketButton"
-import { Product } from "@/sanity.types"
+import { PRODUCT_BY_ID_QUERYResult } from "@/sanity.types"
 import { Loader } from "lucide-react"
 import { useAppContext } from "@/context/context"
 
 interface ProductDetailClientProps {
-  product: Product;
+  product: PRODUCT_BY_ID_QUERYResult;
 }
 
 
 
 export default function ProductDetailClient({ product }: ProductDetailClientProps) {
   const [selectedSize, setSelectedSize] = useState<string>("")
+
+  if (!product) {
+    return <Loader />
+  }
+
   const isOutOfStock = product.stock != null && product.stock <= 0
   const {extraCost, setExtraCost} = useAppContext()
 
@@ -70,7 +75,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   <h2 className="text-lg font-semibold text-gray-800 mb-3">Select Size</h2>
                   {product.size && (
                   <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="flex flex-wrap gap-3">
-                    {product.size?.map((size) => (
+                    {(product.size as string[])?.map((size) => (
                       <div key={size} className="flex items-center space-x-2">
                         <RadioGroupItem value={size} id={`size-${size}`} disabled={isOutOfStock} />
                         <Label htmlFor={`size-${size}`}>{size}</Label>

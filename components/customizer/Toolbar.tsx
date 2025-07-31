@@ -490,7 +490,16 @@ Design ID: ${designId}`
 
       // Add item to basket with the design ID
       const product = await getProductBySlug("custom-tshirt")
-      addItem(product, selectedSize, extraCost)
+      if (product) {
+        addItem(product as any, selectedSize, extraCost)
+      } else {
+        toast({
+          title: "Error",
+          description: "Custom T-shirt product not found. Please contact support.",
+          variant: "destructive",
+        })
+        return
+      }
 
       // uploadZipFile(zipBlob)
       setZipedFile(zipBlob)
