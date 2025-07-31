@@ -1,4 +1,4 @@
-import { getActiveSaleByCouponCode } from "@/sanity/lib/sales/getActiveSaleByCouponCode"
+import { getActiveSaleByCouponCode } from "@/lib/mongodb/sales"
 import { Tag, Clock, Sparkles } from "lucide-react"
 
 async function BlackFridayBanner() {

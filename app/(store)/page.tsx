@@ -1,13 +1,12 @@
 import BlackFirdayBanner from "@/components/BlackFirdayBanner";
 import ProductsView from "@/components/ProductsView";
 import { Button } from "@/components/ui/button";
-import { Product } from "@/sanity.types";
-import { getAllCategories } from "@/sanity/lib/products/getAllCategories";
-import { getAllProducts } from "@/sanity/lib/products/getAllProducts";
+import { getAllCategories } from "@/lib/mongodb/categories";
+import { getAllProducts } from "@/lib/mongodb/products";
 import Image from "next/image";
 
 export default async function Home() {
-  const products : Product[] = await getAllProducts();
+  const products: any[] = await getAllProducts();
   const categories = await getAllCategories();
   
   return (

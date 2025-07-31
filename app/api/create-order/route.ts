@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createOrder } from "@/sanity/lib/orders/createOrder"
+import { createOrder } from "@/lib/mongodb/orders"
 import { auth } from "@clerk/nextjs/server"
-import { client } from "@/sanity/lib/client"
 import { useAppContext } from "@/context/context"
 
 // Paymob API configuration
@@ -93,27 +92,24 @@ export async function POST(request: NextRequest) {
         postalCode: customer.postalCode,
       },
       items: items.map((item: any) => ({
-        product: {
-          _ref: item.id,
-          _type: "reference" as const,
-        },
+        productId: item.id,
         quantity: item.quantity,
         price: item.price,
       })),
       totalAmount: amount / 100, // Convert back from cents
       paymentStatus: "pending" as const,
-      paymentMethod: "paymob",
+      paymentMethod: "paymob" as const,
       fileUrl:assetId,
       paymobOrderId: paymobOrderId.toString(),
       orderStatus: "pending" as const,
       createdAt: new Date().toISOString(),
     }
 
-    const sanityResult = await createOrder(sanityOrderData)
+    const result = await createOrder(sanityOrderData)
 
-    if (!sanityResult.success) {
-      console.error("Failed to create order in Sanity:", sanityResult.error)
-      // Continue with payment flow even if Sanity fails
+    if (!result.insertedId) {
+      console.error("Failed to create order in MongoDB:")
+      // Continue with payment flow even if MongoDB fails for now
     }
 
     // Step 4: Payment Key Request
@@ -159,8 +155,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       paymentUrl,
-      orderId: paymobOrderId,
-      sanityOrderId: sanityResult.success ? sanityResult.order?._id : null,
+      orderId: result.insertedId,
       paymentToken,
     })
    

@@ -1,6 +1,6 @@
 "use client"
 
-import type { Product } from "@/sanity.types"
+import type { Product } from "@/types/mongodb"
 import useBasketStore from "@/store/store"
 import { useEffect, useState } from "react"
 import { Minus, Plus, ShoppingCart } from "lucide-react"

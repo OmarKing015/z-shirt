@@ -3,7 +3,6 @@ import { Geist, Geist_Mono, Noto_Sans_Arabic, Amiri, Cairo, Almarai, Lalezar, Ma
 import "../globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Header";
-import { SanityLive } from "@/sanity/lib/live";
 import { ContextProvider } from "@/context/context";
 
 const geistSans = Geist({
@@ -119,7 +118,6 @@ export default function RootLayout({
               <Header />
               {children}
             </main>
-            <SanityLive />
           </body>
         </html>
       </ContextProvider>

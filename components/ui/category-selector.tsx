@@ -1,5 +1,5 @@
 "use client";
-import { Category } from "@/sanity.types";
+import { Category } from "@/types/mongodb";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
@@ -34,7 +34,7 @@ export function CatogerySelectorComponent({
           className="w-full max-w-full flex justify-center sm:justify-start sm:flex-none items-center space-x-2 bg-blue-500 hover:bg-bule-700 hover:text-white font-bold py-2 px-4 rounded"
         >
           {value
-            ? categories.find((category) => category._id === value)?.title
+            ? categories.find((category) => category._id === value)?.name
             : "Filter by Category"}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0" />
         </Button>
@@ -47,7 +47,7 @@ export function CatogerySelectorComponent({
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 const selectedCategory = categories.find((c) =>
-                  c.title
+                  c.name
                     ?.toLowerCase()
                     .includes(e.currentTarget.value.toLowerCase())
                 );
@@ -65,14 +65,14 @@ export function CatogerySelectorComponent({
               {categories.map((category) => (
                 <CommandItem
                   key={category._id}
-                  value={category.title}
+                  value={category.name}
                   onSelect={() => {
                     setValue(value === category._id ? "" : category._id);
                     router.push(`/categories/${category.slug?.current}`);
                     setOpen(false);
                   }}
                 >
-                  {category.title}
+                  {category.name}
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",

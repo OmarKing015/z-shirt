@@ -1,4 +1,4 @@
-import { Product } from "@/sanity.types";
+import { Product } from "@/types/mongodb";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import  {fabric}  from "fabric";
@@ -63,16 +63,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ totalCost: totalCost });
 
     // Add event listeners for canvas modifications to save state
-    canvas.on({
-      'object:added': get().saveCanvasState,
-      'object:modified': get().saveCanvasState,
-      'object:removed': get().saveCanvasState,
-      'after:render': () => {
+    canvas.on('object:added', get().saveCanvasState);
+    canvas.on('object:modified', get().saveCanvasState);
+    canvas.on('object:removed', get().saveCanvasState);
+    canvas.on('after:render', () => {
         const { totalCost } = costEngine.calculate(canvas.getObjects());
         if (totalCost !== get().totalCost) {
-          set({ totalCost: totalCost });
+            set({ totalCost: totalCost });
         }
-      },
     });
   },
   shirtStyle: "slim",

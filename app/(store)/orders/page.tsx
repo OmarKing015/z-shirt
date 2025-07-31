@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server"
-import { getMyOrders } from "@/sanity/lib/orders/getMyOrders"
+import { getMyOrders } from "@/lib/mongodb/orders"
 import { redirect } from "next/navigation"
 import {
   Package,
@@ -18,7 +18,6 @@ import {
   Eye,
   Download,
 } from "lucide-react"
-import { imageUrl } from "@/lib/imageUrl"
 import Image from "next/image"
 
 async function OrdersPage() {
@@ -296,7 +295,7 @@ async function OrdersPage() {
                                     <div className="w-8 h-8 bg-gray-100 rounded flex-shrink-0">
                                       {item.product?.image ? (
                                         <Image
-                                          src={imageUrl(item.product.image).url() || "/placeholder.svg"}
+                                          src={item.product.image || "/placeholder.svg"}
                                           alt={item.product.name || "Product"}
                                           width={32}
                                           height={32}

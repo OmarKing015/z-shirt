@@ -1,6 +1,6 @@
 "use client"
 
-import type { Product } from "@/sanity.types"
+import type { Product } from "@/types/mongodb"
 import { AnimatePresence, motion } from "framer-motion"
 import ProductThumb from "./ProductThumb"
 

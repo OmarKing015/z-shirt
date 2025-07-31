@@ -2,11 +2,9 @@ import { type NextRequest, NextResponse } from "next/server";
 import {
   updateOrderStatus,
   findOrderByPaymobId,
-} from "@/sanity/lib/orders/createOrder";
-import { updateMultipleProductsStock } from "@/sanity/lib/products/updateStocks";
+} from "@/lib/mongodb/orders";
+import { updateMultipleProductsStock } from "@/lib/mongodb/products";
 import crypto from "crypto";
-import { client } from "@/sanity/lib/client";
-import { backendClient } from "@/sanity/lib/backendClient";
 
 const PAYMOB_HMAC_SECRET = process.env.PAYMOB_HMAC_SECRET;
 
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
         // Payment successful
         console.log("Payment successful:", paymobOrderId);
 
-        // Update order status in Sanity
+        // Update order status in MongoDB
         const updateResult = await updateOrderStatus(
           paymobOrderId,
           "processing",
@@ -58,9 +56,11 @@ export async function POST(request: NextRequest) {
 
           if (orderResult.success && orderResult.order) {
             // Update product stock
-            orderResult.order.items.map((item: any) => ( backendClient.patch(item._id).dec({ stock :item.quantity }).commit()));
-
-            // await updateMultipleProductsStock(stockUpdates);
+            const stockUpdates = orderResult.order.items.map((item: any) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+            }));
+            await updateMultipleProductsStock(stockUpdates);
             console.log("Stock updated for order:", paymobOrderId);
           }
         }
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         // Payment failed
         console.log("Payment failed:", paymobOrderId);
 
-        // Update order status in Sanity
+        // Update order status in MongoDB
         await updateOrderStatus(
           paymobOrderId,
           "cancelled",

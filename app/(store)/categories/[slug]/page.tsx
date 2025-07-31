@@ -1,6 +1,6 @@
 import ProductsView from "@/components/ProductsView"
-import { getAllCategories } from "@/sanity/lib/products/getAllCategories"
-import { getProductsByCategory } from "@/sanity/lib/products/getProductsByCategory"
+import { getAllCategories } from "@/lib/mongodb/categories"
+import { getProductsByCategory } from "@/lib/mongodb/products"
 import { ArrowLeft, Tag } from "lucide-react"
 import Link from "next/link"
 

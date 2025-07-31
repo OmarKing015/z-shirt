@@ -1,34 +1,32 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { notFound, redirect } from "next/navigation"
-import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
-import { imageUrl } from "@/lib/imageUrl"
-import Image from "next/image"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import AddToBasketButton from "@/components/AddToBasketButton"
-import { PRODUCT_BY_ID_QUERYResult } from "@/sanity.types"
-import { Loader } from "lucide-react"
-import { useAppContext } from "@/context/context"
+import { useState } from "react";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import AddToBasketButton from "@/components/AddToBasketButton";
+import { Loader } from "lucide-react";
+import { useAppContext } from "@/context/context";
+import { Product } from "@/types/mongodb";
 
 interface ProductDetailClientProps {
-  product: PRODUCT_BY_ID_QUERYResult;
+  product: Product;
 }
 
-
-
-export default function ProductDetailClient({ product }: ProductDetailClientProps) {
-  const [selectedSize, setSelectedSize] = useState<string>("")
+export default function ProductDetailClient({
+  product,
+}: ProductDetailClientProps) {
+  const [selectedSize, setSelectedSize] = useState<string>("");
 
   if (!product) {
-    return <Loader />
+    return <Loader />;
   }
 
-  const isOutOfStock = product.stock != null && product.stock <= 0
-  const {extraCost, setExtraCost} = useAppContext()
+  const isOutOfStock = product.stock != null && product.stock <= 0;
+  const { extraCost, setExtraCost } = useAppContext();
 
   if (!product.price) {
     return notFound();
@@ -48,7 +46,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               >
                 {product.image && (
                   <Image
-                    src={imageUrl(product.image).url() || "/placeholder.svg"}
+                    src={product.image || "/placeholder.svg"}
                     alt={product.name ?? "Product Image"}
                     layout="fill"
                     objectFit="cover"
@@ -56,7 +54,9 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   />
                 )}
                 {isOutOfStock && (
-                  <Badge className="absolute top-4 left-4 text-sm px-3 py-1 bg-red-500 text-white">Out of Stock</Badge>
+                  <Badge className="absolute top-4 left-4 text-sm px-3 py-1 bg-red-500 text-white">
+                    Out of Stock
+                  </Badge>
                 )}
               </div>
             </div>
@@ -64,29 +64,50 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             {/* Product Details */}
             <div className="flex flex-col justify-between space-y-6">
               <div>
-                <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{product.name}</h1>
-                <p className="text-gray-600 text-lg mb-4">{product.description}</p>
+                <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
+                  {product.name}
+                </h1>
+                <p className="text-gray-600 text-lg mb-4">
+                  {product.description}
+                </p>
                 <div className="flex items-baseline gap-2 mb-6">
-                  <span className="text-5xl font-bold text-gray-900">{(product.price ?? 0).toFixed(2)} EGP</span>
+                  <span className="text-5xl font-bold text-gray-900">
+                    {(product.price ?? 0).toFixed(2)} EGP
+                  </span>
                 </div>
 
                 {/* Size Selection */}
                 <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-3">Select Size</h2>
+                  <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                    Select Size
+                  </h2>
                   {product.size && (
-                  <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="flex flex-wrap gap-3">
-                    {(product.size as string[])?.map((size) => (
-                      <div key={size} className="flex items-center space-x-2">
-                        <RadioGroupItem value={size} id={`size-${size}`} disabled={isOutOfStock} />
-                        <Label htmlFor={`size-${size}`}>{size}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>)}
+                    <RadioGroup
+                      value={selectedSize}
+                      onValueChange={setSelectedSize}
+                      className="flex flex-wrap gap-3"
+                    >
+                      {(product.size as string[])?.map((size) => (
+                        <div key={size} className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value={size}
+                            id={`size-${size}`}
+                            disabled={isOutOfStock}
+                          />
+                          <Label htmlFor={`size-${size}`}>{size}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  )}
                 </div>
               </div>
 
               <div className="flex flex-col gap-4">
-                <AddToBasketButton product={product} selectedSize={selectedSize}  disabled={isOutOfStock || !selectedSize} />
+                <AddToBasketButton
+                  product={product}
+                  selectedSize={selectedSize}
+                  disabled={isOutOfStock || !selectedSize}
+                />
                 <Button variant="outline" className="w-full py-3 text-lg">
                   Add to Wishlist
                 </Button>
@@ -96,5 +117,5 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         </div>
       </div>
     </div>
-  )
+  );
 }

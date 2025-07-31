@@ -1,4 +1,4 @@
-import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
+import { getProductBySlug } from "@/lib/mongodb/products"
 import { notFound, redirect } from "next/navigation"
 import ProductDetailClient from "@/components/ProductDetailClient"
 

@@ -2,7 +2,6 @@
 
 import AddToBasketButton from "@/components/AddToBasketButton"
 import Loader from "@/components/loader"
-import { imageUrl } from "@/lib/imageUrl"
 import useBasketStore from "@/store/store"
 import { SignInButton, useAuth, useUser } from "@clerk/nextjs"
 import Image from "next/image"
@@ -67,7 +66,7 @@ const {extraCost} = useAppContext()
         name: item.product.name || "Product",
         price: item.product.price || 0,
         quantity: item.quantity,
-        image: item.product.image ? imageUrl(item.product.image).url() : "/placeholder.svg?height=80&width=80",
+        image: item.product.image || "/placeholder.svg?height=80&width=80",
         size: item.size,
       }))
 
@@ -110,7 +109,7 @@ const {extraCost} = useAppContext()
                   >
                     {item.product.image ? (
                       <Image
-                        src={imageUrl(item.product.image).url() || "/placeholder.svg"}
+                        src={item.product.image || "/placeholder.svg"}
                         alt={item.product.name ?? "Product Image"}
                         className="w-full h-full object-cover rounded-lg"
                         width={96}

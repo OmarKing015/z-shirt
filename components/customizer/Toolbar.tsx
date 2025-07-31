@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import JSZip from "jszip"
-import { getProductBySlug } from "@/sanity/lib/products/getProductBySlug"
 import { useAppContext } from "@/context/context"
 import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs"
 import { redirect } from "next/navigation"
@@ -489,9 +488,10 @@ Design ID: ${designId}`
       // document.body.removeChild(link);
 
       // Add item to basket with the design ID
-      const product = await getProductBySlug("custom-tshirt")
-      if (product) {
-        addItem(product as any, selectedSize, extraCost)
+      const response = await fetch("/api/products/custom-tshirt");
+      const product = await response.json();
+      if (response.ok) {
+        addItem(product, selectedSize, extraCost)
       } else {
         toast({
           title: "Error",

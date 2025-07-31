@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createOrder } from "@/sanity/lib/orders/createOrder"
+import { createOrder } from "@/lib/mongodb/orders"
 import { auth } from "@clerk/nextjs/server"
 
 export async function POST(request: NextRequest) {
@@ -38,10 +38,7 @@ export async function POST(request: NextRequest) {
         postalCode: customer.postalCode,
       },
       items: items.map((item: any) => ({
-        product: {
-          _ref: item.id,
-          _type: "reference" as const,
-        },
+        productId: item.id,
         quantity: item.quantity,
         price: item.price,
       })),
@@ -56,22 +53,21 @@ export async function POST(request: NextRequest) {
 
     console.log("Sanity COD order data:", JSON.stringify(sanityOrderData, null, 2))
 
-    const sanityResult = await createOrder(sanityOrderData)
+    const result = await createOrder(sanityOrderData)
 
-    if (!sanityResult.success) {
-      console.error("Failed to create COD order in Sanity:", sanityResult.error)
+    if (!result.insertedId) {
+      console.error("Failed to create COD order in MongoDB:")
       return NextResponse.json({ success: false, error: "Failed to create order" }, { status: 500 })
     }
 
-    console.log("COD order created successfully:", sanityResult.order?._id)
+    console.log("COD order created successfully:", result.insertedId)
 
     // For COD, we don't need to process payment immediately
     // The order is created and will be marked as paid when delivered
 
     return NextResponse.json({
       success: true,
-      orderId: codOrderId,
-      sanityOrderId: sanityResult.order?._id,
+      orderId: result.insertedId,
       message: "COD order created successfully",
     })
   } catch (error) {
